@@ -14,6 +14,8 @@ class UM_Members {
 			'display_name',
 			'user_email',
 		);
+		
+		add_filter( 'um_search_select_fields', array(&$this, 'um_search_select_fields'), 10, 1 );
 
 	}
 
@@ -23,8 +25,6 @@ class UM_Members {
 	function user_search_columns( $search_columns ){
 		if ( is_admin() ) {
 			$search_columns[] = 'display_name';
-		} else {
-			$search_columns = array('display_name','user_email','user_login');
 		}
 		return $search_columns;
 	}
@@ -86,6 +86,10 @@ class UM_Members {
 
 		// filter all search fields
 		$attrs = apply_filters( 'um_search_fields', $attrs );
+		
+		if( $type == 'select' ){
+		    $attrs = apply_filters( 'um_search_select_fields', $attrs );
+		}
 
 		switch( $type ) {
 
@@ -93,7 +97,7 @@ class UM_Members {
 
 				?>
 
-				<select name="<?php echo $filter; ?>" id="<?php echo $filter; ?>" class="um-s1" style="width: 100%" data-placeholder="<?php echo stripslashes( $attrs['label'] ); ?>">
+				<select name="<?php echo $filter; ?>" id="<?php echo $filter; ?>" class="um-s1" style="width: 100%" data-placeholder="<?php echo __( stripslashes( $attrs['label'] ), 'ultimate-member'); ?>">
 
 					<option></option>
 
@@ -111,7 +115,7 @@ class UM_Members {
 
 					?>
 
-					<option value="<?php echo $opt; ?>" <?php um_select_if_in_query_params( $filter, $opt ); ?>><?php echo $v; ?></option>
+					<option value="<?php echo $opt; ?>" <?php um_select_if_in_query_params( $filter, $opt ); ?>><?php echo __( $v, 'ultimate-member'); ?></option>
 
 					<?php } ?>
 
@@ -125,7 +129,7 @@ class UM_Members {
 
 				?>
 
-				<input type="text"  name="<?php echo $filter; ?>" id="<?php echo $filter; ?>" placeholder="<?php echo isset( $attrs['label'] ) ? $attrs['label'] : ''; ?>" value='<?php echo esc_attr( um_queried_search_value(  $filter, false ) ); ?>' />
+				<input type="text" autocomplete="off" name="<?php echo $filter; ?>" id="<?php echo $filter; ?>" placeholder="<?php echo isset( $attrs['label'] ) ? __( $attrs['label'], 'ultimate-member') : ''; ?>" value='<?php echo esc_attr( um_queried_search_value(  $filter, false ) ); ?>' />
 
 				<?php
 
@@ -134,11 +138,46 @@ class UM_Members {
 		}
 
 	}
+	
+	/**
+	 * Display assigned roles in search filter 'role' field
+	 * @param  	array $attrs 
+	 * @return 	array
+	 * @uses  	add_filter 'um_search_select_fields'
+	 * @since 	1.3.83
+	 */
+	function um_search_select_fields( $attrs ) {
+		global $ultimatemember;
+
+		if( strstr( $attrs['metakey'], 'role_' ) ){
+
+			$shortcode_roles = get_post_meta( $ultimatemember->shortcodes->form_id, '_um_roles', true );
+			$um_roles = $ultimatemember->query->get_roles( false );
+			
+			if( ! empty( $shortcode_roles ) && is_array( $shortcode_roles ) ){ 
+
+				$attrs['options'] = array();
+
+				foreach ( $um_roles as $key => $value ) {
+				    if ( in_array( $key, $shortcode_roles ) ) {
+						$attrs['options'][ $key ] = $value;
+				    }
+				}
+
+			}
+			
+		}
+
+		return $attrs;
+ 	}
+
+
+	
 
 	/***
 	***	@Generate a loop of results
 	***/
-	function get_members($args){
+	function get_members( $args ){
 
 		global $ultimatemember, $wpdb, $post;
 
@@ -149,29 +188,49 @@ class UM_Members {
 		
 		// Prepare for BIG SELECT query
 		$wpdb->query('SET SQL_BIG_SELECTS=1');
-		// Add filter to optimize BIG Select with multiple LEFT JOINs
-		add_filter( 'pre_user_query', array( $this, 'um_optimize_member_query' ) );
-
-		$users = new WP_User_Query( $query_args );
-
-		remove_filter( 'pre_user_query', array( $this, 'um_optimize_member_query' ) );
 		
 		// number of profiles for mobile
-		if ( $ultimatemember->mobile->isMobile() && isset( $profiles_per_page_mobile ) )
+		if ( $ultimatemember->mobile->isMobile() && isset( $profiles_per_page_mobile ) ){
 			$profiles_per_page = $profiles_per_page_mobile;
+		}
 
-		$array['users'] = array_unique( $users->results );
+		$query_args['number'] = $profiles_per_page;
+
+		if( isset( $args['number'] ) ){
+			$query_args['number'] = $args['number'];
+		}
+
+		if(  isset( $args['page'] ) ){
+			$members_page = $args['page'];
+		}else{
+			$members_page = isset( $_REQUEST['members_page'] ) ? $_REQUEST['members_page'] : 1;
+		}
+
+		$query_args['paged'] = $members_page;
+
+		if( ! um_user('can_view_all') && is_user_logged_in() ){
+			unset( $query_args );
+		}
+		
+		do_action('um_user_before_query', $query_args );
+		
+		$users = new WP_User_Query( $query_args );
+
+		do_action('um_user_after_query', $query_args, $users );
+		
+		
+		$array['users'] = isset( $users->results ) && ! empty( $users->results ) ? array_unique( $users->results ) : array();
 
 		$array['total_users'] = (isset( $max_users ) && $max_users && $max_users <= $users->total_users ) ? $max_users : $users->total_users;
 
-		$array['page'] = isset($_REQUEST['members_page']) ? $_REQUEST['members_page'] : 1;
+		$array['page'] = $members_page;
 
 		$array['total_pages'] = ceil( $array['total_users'] / $profiles_per_page );
 
 		$array['header'] = $this->convert_tags( $header, $array );
 		$array['header_single'] = $this->convert_tags( $header_single, $array );
 
-		$array['users_per_page'] = array_slice($array['users'], ( ( $profiles_per_page * $array['page'] ) - $profiles_per_page ), $profiles_per_page );
+		$array['users_per_page'] = $array['users'];
 
 		for( $i = $array['page']; $i <= $array['page'] + 2; $i++ ) {
 			if ( $i <= $array['total_pages'] ) {
@@ -255,6 +314,7 @@ class UM_Members {
 		}
 
 		return apply_filters('um_prepare_user_results_array', $array );
+
 	}
 
 

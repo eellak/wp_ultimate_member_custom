@@ -8,7 +8,7 @@
 
 		$asterisk = um_get_option('form_asterisk');
 		if ( $asterisk && isset( $data['required'] ) && $data['required'] == 1 )
-			$label = $label . '<span class="um-req" title="'.__('Required','ultimatemember').'">*</span>';
+			$label = $label . '<span class="um-req" title="'.__('Required','ultimate-member').'">*</span>';
 
 		return $label;
 	}
@@ -20,7 +20,7 @@
 	function um_profile_field_filter_hook__soundcloud_track( $value, $data ) {
 
 		if ( !is_numeric( $value ) ) {
-			return __('Invalid soundcloud track ID','ultimatemember');
+			return __('Invalid soundcloud track ID','ultimate-member');
 		}
 
 		$value = '<div class="um-soundcloud">
@@ -79,7 +79,7 @@
 	add_filter('um_profile_field_filter_hook__user_registered', 'um_profile_field_filter_hook__user_registered', 99, 2);
 	function um_profile_field_filter_hook__user_registered( $value, $data ) {
 		$value = strtotime($value);
-		$value = sprintf(__('Joined %s','ultimatemember'), date_i18n('F d, Y', $value) );
+		$value = sprintf(__('Joined %s','ultimate-member'), date_i18n('F d, Y', $value) );
 		return $value;
 	}
 
@@ -87,26 +87,43 @@
 	***	@last login date
 	***/
 	add_filter('um_profile_field_filter_hook__last_login', 'um_profile_field_filter_hook__last_login', 99, 2);
+	add_filter('um_profile_field_filter_hook___um_last_login', 'um_profile_field_filter_hook__last_login', 99, 2);
 	function um_profile_field_filter_hook__last_login( $value, $data ) {
-		$value = sprintf( __('Last login: %s','ultimatemember'), um_user_last_login( um_user('ID') ) );
+
+		$value = sprintf( __('Last login: %s','ultimate-member'), um_user_last_login( um_user('ID') ) );
+		
 		return $value;
 	}
 
 	/***
 	***	@urls in description
 	***/
+	add_filter('um_profile_field_filter_hook__textarea', 'um_profile_field_filter_hook__textarea', 99, 2);
+	function um_profile_field_filter_hook__textarea( $value, $data ) {
+		global $ultimatemember;
+
+		if ( isset( $data ) && isset( $data['html'] ) && $data['html'] == 1 )
+			return $value;
+
+		$value = esc_textarea( $value );
+		$value = preg_replace('$(https?://[a-z0-9_./?=&#-]+)(?![^<>]*>)$i', ' <a href="$1" target="_blank">$1</a> ', $value." ");
+		$value = preg_replace('$(www\.[a-z0-9_./?=&#-]+)(?![^<>]*>)$i', '<a target="_blank" href="http://$1">$1</a> ', $value." ");
+		$value = wpautop($value);
+
+		return $value;
+	}
+
 	add_filter('um_profile_field_filter_hook__description', 'um_profile_field_filter_hook__description', 99, 2);
-	add_filter('um_profile_field_filter_hook__textarea', 'um_profile_field_filter_hook__description', 99, 2);
 	function um_profile_field_filter_hook__description( $value, $data ) {
 		global $ultimatemember;
 
 		if ( isset( $data ) && isset( $data['html'] ) && $data['html'] == 1 )
 			return $value;
 
+		$value = esc_textarea( $value );
 		$value = preg_replace('$(https?://[a-z0-9_./?=&#-]+)(?![^<>]*>)$i', ' <a href="$1" target="_blank">$1</a> ', $value." ");
 		$value = preg_replace('$(www\.[a-z0-9_./?=&#-]+)(?![^<>]*>)$i', '<a target="_blank" href="http://$1">$1</a> ', $value." ");
-		$value = wpautop($value);
-
+		
 		return $value;
 	}
 
@@ -196,7 +213,7 @@
 
 		if ( ( isset( $data['validate'] ) && $data['validate'] != '' && strstr( $data['validate'], 'url' ) ) || ( isset( $data['type'] ) && $data['type'] == 'url' ) ) {
 			$alt = ( isset( $data['url_text'] ) && !empty( $data['url_text'] ) ) ? $data['url_text'] : $value;
-			$url_rel = ( isset( $data['url_rel'] ) ) ? 'rel="nofollow"' : '';
+			$url_rel = ( isset( $data['url_rel'] ) && $data['url_rel'] == 'nofollow' ) ? 'rel="nofollow"' : '';
 			if( !strstr( $value, 'http' )
 				&& !strstr( $value, '://' )
 				&& !strstr( $value, 'www.' )
@@ -204,14 +221,15 @@
 				&& !strstr( $value, '.net' )
 				&& !strstr( $value, '.org' )
 			) {
-				if ( $data['validate'] == 'soundcloud_url' ) $value = 'https://soundcloud.com/' . $value;
-				if ( $data['validate'] == 'youtube_url' ) $value = 'https://youtube.com/user/' . $value;
-				if ( $data['validate'] == 'facebook_url' ) $value = 'https://facebook.com/' . $value;
-				if ( $data['validate'] == 'twitter_url' ) $value = 'https://twitter.com/' . $value;
-				if ( $data['validate'] == 'linkedin_url' ) $value = 'https://linkedin.com/' . $value;
-				if ( $data['validate'] == 'skype' ) $value = $value;
-				if ( $data['validate'] == 'googleplus_url' ) $value = 'https://plus.google.com/' . $value;
-				if ( $data['validate'] == 'instagram_url' ) $value = 'https://instagram.com/' . $value;
+				if ( $data['validate'] == 'soundcloud_url' ) 	$value = 'https://soundcloud.com/' . $value;
+				if ( $data['validate'] == 'youtube_url' ) 		$value = 'https://youtube.com/user/' . $value;
+				if ( $data['validate'] == 'facebook_url' ) 		$value = 'https://facebook.com/' . $value;
+				if ( $data['validate'] == 'twitter_url' ) 		$value = 'https://twitter.com/' . $value;
+				if ( $data['validate'] == 'linkedin_url' ) 		$value = 'https://linkedin.com/' . $value;
+				if ( $data['validate'] == 'skype' ) 			$value = $value;
+				if ( $data['validate'] == 'googleplus_url' ) 	$value = 'https://plus.google.com/' . $value;
+				if ( $data['validate'] == 'instagram_url' ) 	$value = 'https://instagram.com/' . $value;
+				if ( $data['validate'] == 'vk_url' ) 			$value = 'https://vk.com/' . $value;
 			}
 
 			if ( isset( $data['validate'] ) && $data['validate'] == 'skype' ) {
@@ -375,9 +393,85 @@
     add_filter('um_field_non_utf8_value','um_field_non_utf8_value');
     function um_field_non_utf8_value( $value ){
     	
-    	if( ! preg_match('/[^\\p{Common}\\p{Latin}]/u', $value ) ){
-								$value = htmlentities( $value );
-		}
+    	$encoding = mb_detect_encoding( $value, 'utf-8, iso-8859-1, ascii', true);
+	    if (strcasecmp($encoding, 'UTF-8') !== 0) {
+	      	$value = iconv($encoding, 'utf-8', $value);
+	    }
 
 		return $value;
     }
+    
+
+    /**
+     * Returns dropdown/multi-select options from a callback function
+     * @param  $options array
+     * @param  $data array
+     * @return $options array
+     * @uses   hook filter: um_select_dropdown_dynamic_options, um_multiselect_options
+     */
+    add_filter('um_select_dropdown_dynamic_options','um_select_dropdown_dynamic_callback_options', 10, 2);
+    add_filter('um_multiselect_options','um_select_dropdown_dynamic_callback_options', 10, 2);
+    function um_select_dropdown_dynamic_callback_options( $options, $data ){
+        
+        if( isset( $data['custom_dropdown_options_source'] ) && ! empty( $data['custom_dropdown_options_source'] ) ){
+
+        	if( function_exists( $data['custom_dropdown_options_source'] ) ){
+        		$options = call_user_func( $data['custom_dropdown_options_source'] );
+        	}
+        }
+
+    	return $options;
+    }
+
+    /**
+     *
+     * Pair dropdown/multi-select options from a callback function
+     * @param  $value string
+     * @param  $type  string
+     * @param  $data  array
+     * @return $value string
+     * @uses   hook filter: um_profile_field_filter_hook__
+     */
+    add_filter('um_profile_field_filter_hook__select','um_option_match_callback_view_field', 10, 2);
+    add_filter('um_profile_field_filter_hook__multiselect','um_option_match_callback_view_field', 10, 2);
+    add_filter('um_field_select_default_value','um_option_match_callback_view_field', 10, 2);
+    add_filter('um_field_multiselect_default_value','um_option_match_callback_view_field', 10, 2);
+    function um_option_match_callback_view_field( $value, $data ){
+    	global $ultimatemember;
+		
+		if( ! empty( $data['custom_dropdown_options_source'] ) ){
+			return $ultimatemember->fields->get_option_value_from_callback( $value, $data, $data['type'] );
+		}
+
+    	return $value;
+    }
+
+    /**
+     * Apply textdomain in select/multi-select options
+     * @param  $value string
+     * @param  $type  string
+     * @param  $data  array
+     * @return $value string
+     * @uses   hook filters: um_profile_field_filter_hook__select, um_profile_field_filter_hook__multiselect
+     */
+    add_filter('um_profile_field_filter_hook__select','um_profile_field__select_translate', 10, 2);
+    add_filter('um_profile_field_filter_hook__multiselect','um_profile_field__select_translate', 10, 2);
+    function um_profile_field__select_translate( $value, $data ){
+
+    	if( empty( $value  ) ) return $value;
+
+    	$options = explode(", ", $value );
+    	$arr_options = array();
+    	if( is_array( $options ) ){
+    		foreach ( $options as $item ) {
+    			$arr_options[] = __( $item, 'ultimate-member');
+    		}
+    	}
+
+    	$value = implode(", ", $arr_options);
+
+    	return $value;
+    }
+
+
+

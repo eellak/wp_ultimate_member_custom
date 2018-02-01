@@ -8,7 +8,7 @@ class UM_Shortcodes {
 
 		$this->loop = '';
 
-		add_shortcode('ultimatemember', array(&$this, 'ultimatemember'), 1);
+		add_shortcode('ultimatemember', array(&$this, 'ultimatemember'  ), 1);
 
 		add_shortcode('um_loggedin', array(&$this, 'um_loggedin'));
 		add_shortcode('um_loggedout', array(&$this, 'um_loggedout'));
@@ -118,6 +118,10 @@ class UM_Shortcodes {
 			}
 		}
 
+		if( um_is_core_page('user') && um_is_user_himself() ){
+			$classes[] = 'um-own-profile';
+		}
+
 		return $classes;
 	}
 
@@ -198,7 +202,7 @@ class UM_Shortcodes {
 		ob_start();
 
 		$defaults = array(
-			'lock_text' => __('This content has been restricted to logged in users only. Please <a href="{login_referrer}">login</a> to view this content.', 'ultimatemember'),
+			'lock_text' => __('This content has been restricted to logged in users only. Please <a href="{login_referrer}">login</a> to view this content.', 'ultimate-member'),
 			'show_lock' => 'yes',
 		);
 
@@ -407,7 +411,7 @@ class UM_Shortcodes {
 	function get_templates($excluded = null) {
 
 		if ($excluded) {
-			$array[$excluded] = __('Default Template', 'ultimatemember');
+			$array[$excluded] = __('Default Template', 'ultimate-member');
 		}
 
 		$paths[] = glob(um_path . 'templates/' . '*.php');
@@ -547,9 +551,16 @@ class UM_Shortcodes {
 	    $a = shortcode_atts( array(
 	        'roles' => '',
 	        'not' => '',
+	        'is_profile' => false,
 	    ), $atts );
 
-	    um_fetch_user( $user_ID );
+	    if( $a['is_profile'] ){
+	    	um_fetch_user( um_profile_id() );
+	    }else{
+	    	um_fetch_user( $user_ID );
+	    }
+
+	    
 
 	    $current_user_role = um_user('role');
 

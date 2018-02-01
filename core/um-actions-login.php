@@ -15,15 +15,15 @@
 
 
 		if ( isset( $args['username'] ) && $args['username'] == '' ) {
-			$ultimatemember->form->add_error( 'username',  __('Please enter your username or email','ultimatemember') );
+			$ultimatemember->form->add_error( 'username',  __('Please enter your username or email','ultimate-member') );
 		}
 
 		if ( isset( $args['user_login'] ) && $args['user_login'] == '' ) {
-			$ultimatemember->form->add_error( 'user_login',  __('Please enter your username','ultimatemember') );
+			$ultimatemember->form->add_error( 'user_login',  __('Please enter your username','ultimate-member') );
 		}
 
 		if ( isset( $args['user_email'] ) && $args['user_email'] == '' ) {
-			$ultimatemember->form->add_error( 'user_email',  __('Please enter your email','ultimatemember') );
+			$ultimatemember->form->add_error( 'user_email',  __('Please enter your email','ultimate-member') );
 		}
 
 		if ( isset( $args['username'] ) ) {
@@ -47,13 +47,13 @@
 
 		if ( !username_exists( $user_name ) ) {
 			if ( $is_email ) {
-				$ultimatemember->form->add_error( $field,  __(' Sorry, we can\'t find an account with that email address','ultimatemember') );
+				$ultimatemember->form->add_error( $field,  __(' Sorry, we can\'t find an account with that email address','ultimate-member') );
 			} else {
-				$ultimatemember->form->add_error( $field,  __(' Sorry, we can\'t find an account with that username','ultimatemember') );
+				$ultimatemember->form->add_error( $field,  __(' Sorry, we can\'t find an account with that username','ultimate-member') );
 			}
 		} else {
 			if ( $args['user_password'] == '' ) {
-				$ultimatemember->form->add_error( 'user_password',  __('Please enter your password','ultimatemember') );
+				$ultimatemember->form->add_error( 'user_password',  __('Please enter your password','ultimate-member') );
 			}
 		}
 
@@ -61,15 +61,32 @@
 		if ( $user && wp_check_password( $args['user_password'], $user->data->user_pass, $user->ID) ) {
 			$ultimatemember->login->auth_id = username_exists( $user_name );
 		} else {
-			$ultimatemember->form->add_error( 'user_password',  __('Password is incorrect. Please try again.','ultimatemember') );
+			$ultimatemember->form->add_error( 'user_password',  __('Password is incorrect. Please try again.','ultimate-member') );
 		}
 
 		// add a way for other plugins like wp limit login
 		// to limit the login attempts
 		$user = apply_filters( 'authenticate', null, $user_name, $args['user_password'] );
+		
+		$authenticate_user = apply_filters( 'wp_authenticate_user', $user_name, $args['user_password'] );
+		
+		// @since 4.18 replacement for 'wp_login_failed' action hook
+		// see WP function wp_authenticate()
+		$ignore_codes = array('empty_username', 'empty_password');
+
+		if ( is_wp_error( $user ) && ! in_array( $user->get_error_code(), $ignore_codes ) ) {
+			
+				$ultimatemember->form->add_error( $user->get_error_code(),  __( $user->get_error_message() ,'ultimate-member') );
+		}
+
+		if( is_wp_error( $authenticate_user ) && ! in_array( $authenticate_user->get_error_code(), $ignore_codes ) ){
+
+				$ultimatemember->form->add_error( $authenticate_user->get_error_code(),  __( $authenticate_user->get_error_message() ,'ultimate-member') );
+		
+		}
 
 		// if there is an error notify wp
-		if( $ultimatemember->form->has_error( $field ) || $ultimatemember->form->has_error( $user_password ) ) {
+		if( $ultimatemember->form->has_error( $field ) || $ultimatemember->form->has_error( $user_password ) || $ultimatemember->form->count_errors() > 0 ) {
 			do_action( 'wp_login_failed', $user_name );
 		}
 	}
@@ -84,16 +101,22 @@
 		$error = '';
 	
 		if( $ultimatemember->form->count_errors() > 0 ) {
-			$error = array_values( $ultimatemember->form->errors );
-			$error = array_shift( $error );
+			$errors = $ultimatemember->form->errors;
+			// hook for other plugins to display error
+			$error_keys = array_keys( $errors );
 		}
 
-		// hook for other plugins to display error
-		$errors = trim( apply_filters( 'login_errors', $error ) );
+		if( isset( $args['custom_fields'] ) ){
+			$custom_fields = $args['custom_fields'];
+		}
 
-		if( trim( $errors ) )
-		{
-			echo '<p class="um-notice err"><i class="um-icon-ios-close-empty" onclick="jQuery(this).parent().fadeOut();"></i>' . $errors . '</p>';
+		if( ! empty( $error_keys ) && ! empty( $custom_fields ) ){
+			foreach( $error_keys as $error ){
+				if( trim( $error ) && ! isset( $custom_fields[ $error ] )  && ! empty(  $errors[ $error ] ) ){
+					$error_message = apply_filters( 'login_errors', $errors[ $error ]  );
+					echo '<p class="um-notice err um-error-code-'.$error.'"><i class="um-icon-ios-close-empty" onclick="jQuery(this).parent().fadeOut();"></i>' . $error_message  . '</p>';
+				}
+			}
 		}
 	}
 
@@ -160,7 +183,7 @@
 		$rememberme = ( isset($args['rememberme']) ) ? 1 : 0;
 		
 		if ( ( um_get_option('deny_admin_frontend_login')   && ! isset( $_GET['provider'] ) ) && strrpos( um_user('wp_roles' ), 'administrator' ) !== FALSE ){
-			wp_die( __('This action has been prevented for security measures.','ultimatemember') );
+			wp_die( __('This action has been prevented for security measures.','ultimate-member') );
 		}
 
 		$ultimatemember->user->auto_login( um_user('ID'), $rememberme );
@@ -173,8 +196,11 @@
 			exit( wp_redirect(  $args['redirect_to']  ) );
 		}
 
+		$role = um_user('role');
+		$role_data = $ultimatemember->query->role_data( $role );
+		
 		// Role redirect
-		$after = um_user('after_login');
+		$after = $role_data['after_login'];
 		switch( $after ) {
 
 			case 'redirect_admin':
@@ -186,7 +212,7 @@
 				break;
 
 			case 'redirect_url':
-				exit( wp_redirect( um_user('login_redirect_url') ) );
+				exit( wp_redirect( $role_data['login_redirect_url'] ) );
 				break;
 
 			case 'refresh':
@@ -194,7 +220,6 @@
 				break;
 
 		}
-
 	}
 
 	/***
@@ -203,13 +228,12 @@
 	add_action('um_submit_form_login', 'um_submit_form_login', 10);
 	function um_submit_form_login($args){
 		global $ultimatemember;
-
+		
 		if ( !isset($ultimatemember->form->errors) ) {
 			do_action( 'um_user_login', $args );
 		}
 
 		do_action('um_user_login_extra_hook', $args );
-
 	}
 
 	/***
@@ -236,18 +260,18 @@
 		<div class="um-col-alt">
 
 			<?php if ( isset( $args['show_rememberme'] ) && $args['show_rememberme'] ) {
-					echo $ultimatemember->fields->checkbox('rememberme', __('Keep me signed in','ultimatemember') );
+					echo $ultimatemember->fields->checkbox('rememberme', __('Keep me signed in','ultimate-member') );
 					echo '<div class="um-clear"></div>';
 			} ?>
 
 			<?php if ( isset($args['secondary_btn']) && $args['secondary_btn'] != 0 ) { ?>
 
-			<div class="um-left um-half"><input type="submit" value="<?php echo $primary_btn_word; ?>" class="um-button" /></div>
-			<div class="um-right um-half"><a href="<?php echo $secondary_btn_url; ?>" class="um-button um-alt"><?php echo $secondary_btn_word; ?></a></div>
+			<div class="um-left um-half"><input type="submit" value="<?php echo __( $primary_btn_word,'ultimate-member'); ?>" class="um-button" id="um-submit-btn" /></div>
+			<div class="um-right um-half"><a href="<?php echo $secondary_btn_url; ?>" class="um-button um-alt"><?php echo __( $secondary_btn_word,'ultimate-member'); ?></a></div>
 
 			<?php } else { ?>
 
-			<div class="um-center"><input type="submit" value="<?php echo $args['primary_btn_word']; ?>" class="um-button" /></div>
+			<div class="um-center"><input type="submit" value="<?php echo __( $args['primary_btn_word'],'ultimate-member'); ?>" class="um-button" id="um-submit-btn" /></div>
 
 			<?php } ?>
 
@@ -267,10 +291,10 @@
 
 		if ( $args['forgot_pass_link'] == 0 ) return;
 
-	?>
+		?>
 
 		<div class="um-col-alt-b">
-			<a href="<?php echo um_get_core_page('password-reset'); ?>" class="um-link-alt"><?php _e('Forgot your password?','ultimatemember'); ?></a>
+			<a href="<?php echo um_get_core_page('password-reset'); ?>" class="um-link-alt"><?php _e('Forgot your password?','ultimate-member'); ?></a>
 		</div>
 
 		<?php
@@ -282,9 +306,8 @@
 	add_action('um_main_login_fields', 'um_add_login_fields', 100);
 	function um_add_login_fields($args){
 		global $ultimatemember;
-
+		
 		echo $ultimatemember->fields->display( 'login', $args );
-
 	}
 
 	/**

@@ -6,13 +6,34 @@
 	add_action('um_after_user_role_is_updated','um_setup_synced_wp_role', 50, 2);
 	function um_setup_synced_wp_role( $user_id, $role ) {
 		global $ultimatemember;
+		
 		$meta = $ultimatemember->query->role_data( $role );
-		$meta = apply_filters('um_user_permissions_filter', $meta, $user_id);
+		$meta = apply_filters('um_user_permissions_filter', $meta, $user_id );
+		$wp_user_object = new WP_User( $user_id );
+		
 		if ( isset( $meta['synced_role'] ) && $meta['synced_role'] ) {
-			$wp_user_object = new WP_User( $user_id );
-			$wp_user_object->set_role( $meta['synced_role'] );
+			$wp_user_object->add_role( $meta['synced_role'] );
+		}elseif( ! $wp_user_object->roles ) { // Fallback user default role if nothing set
+			$wp_user_object->add_role( 'subscriber' );
 		}
 	}
+
+	/***
+	*** @remove previously synced WP role
+	***/
+	add_action('um_when_role_is_set', 'um_remove_prev_synced_wp_role');
+	function um_remove_prev_synced_wp_role( $user_id ) {
+		global $ultimatemember;
+
+		um_fetch_user( $user_id );
+		$role = um_user('role');
+		$meta = $ultimatemember->query->role_data( $role );
+		if ( isset( $meta['synced_role'] ) && $meta['synced_role'] ) {
+			$wp_user_object = new WP_User( $user_id );
+			$wp_user_object->remove_role( $meta['synced_role'] );
+		}
+	}
+
 
 	/***
 	***	@after user uploads, clean up uploads dir
@@ -59,6 +80,9 @@
 
 			do_action('um_update_profile_full_name', $_POST);
 
+			// generate profile slug 
+			$ultimatemember->permalinks->profile_url( true );
+
 		}
 
 	}
@@ -72,8 +96,8 @@
 
 	?>
 
-		<li><a href="<?php echo um_get_core_page('account'); ?>"><?php _e('Your account','ultimatemember'); ?></a></li>
-		<li><a href="<?php echo esc_url( add_query_arg('redirect_to', $ultimatemember->permalinks->get_current_url(true), um_get_core_page('logout') ) ); ?>"><?php _e('Logout','ultimatemember'); ?></a></li>
+		<li><a href="<?php echo um_get_core_page('account'); ?>"><?php _e('Your account','ultimate-member'); ?></a></li>
+		<li><a href="<?php echo esc_url( add_query_arg('redirect_to', $ultimatemember->permalinks->get_current_url(true), um_get_core_page('logout') ) ); ?>"><?php _e('Logout','ultimate-member'); ?></a></li>
 
 	<?php
 

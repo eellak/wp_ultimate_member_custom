@@ -1,8 +1,9 @@
 <?php
 
-	/***
-	***	@fallback for ajax urls
-	***/
+	/**
+	 * Fallback for ajax urls
+	 * @uses action hooks: wp_head, admin_head
+	 */
 	add_action('wp_head','ultimatemember_ajax_urls');
 	add_action('admin_head','ultimatemember_ajax_urls');
 	function ultimatemember_ajax_urls() { 
@@ -23,9 +24,11 @@
 		}
 	}
 
-	/***
-	***	@remove any file silently
-	***/
+	/**
+	 * Remove any files silently
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_remove_file, wp_ajax_ultimatemember_remove_file
+	 * 
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_remove_file', 'ultimatemember_remove_file');
 	add_action('wp_ajax_ultimatemember_remove_file', 'ultimatemember_remove_file');
 	function ultimatemember_remove_file(){
@@ -34,9 +37,10 @@
 		$ultimatemember->files->delete_file( $src );
 	}
 
-	/***
-	***	@remove profile photo silently
-	***/
+	/**
+	 * Removes profile photo silently
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_delete_profile_photo, wp_ajax_ultimatemember_delete_profile_photo
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_delete_profile_photo', 'ultimatemember_delete_profile_photo');
 	add_action('wp_ajax_ultimatemember_delete_profile_photo', 'ultimatemember_delete_profile_photo');
 	function ultimatemember_delete_profile_photo(){
@@ -49,9 +53,10 @@
 
 	}
 
-	/***
-	***	@remove cover photo silently
-	***/
+	/**
+	 * Remove cover photo silently
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_delete_cover_photo, wp_ajax_ultimatemember_delete_cover_photo
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_delete_cover_photo', 'ultimatemember_delete_cover_photo');
 	add_action('wp_ajax_ultimatemember_delete_cover_photo', 'ultimatemember_delete_cover_photo');
 	function ultimatemember_delete_cover_photo(){
@@ -64,9 +69,10 @@
 
 	}
 
-	/***
-	***	@resampling/crop images
-	***/
+	/**
+	 * Resampling/crop images
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_resize_image, wp_ajax_ultimatemember_resize_image
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_resize_image', 'ultimatemember_resize_image');
 	add_action('wp_ajax_ultimatemember_resize_image', 'ultimatemember_resize_image');
 	function ultimatemember_resize_image(){
@@ -101,9 +107,10 @@
 
 	}
 
-	/***
-	***	@run an ajax action on the fly
-	***/
+	/**
+	 * Run an ajax action on the fly
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_muted_action, wp_ajax_ultimatemember_muted_action
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_muted_action', 'ultimatemember_muted_action');
 	add_action('wp_ajax_ultimatemember_muted_action', 'ultimatemember_muted_action');
 	function ultimatemember_muted_action(){
@@ -120,9 +127,10 @@
 
 	}
 
-	/***
-	***	@run an ajax pagination on the fly
-	***/
+	/**
+	 * Run an ajax pagination on the fly
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_ajax_paginate, wp_ajax_ultimatemember_ajax_paginate
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_ajax_paginate', 'ultimatemember_ajax_paginate');
 	add_action('wp_ajax_ultimatemember_ajax_paginate', 'ultimatemember_ajax_paginate');
 	function ultimatemember_ajax_paginate(){
@@ -140,9 +148,11 @@
 
 	}
 
-	/***
-	***	@run check if username exists
-	***/
+	/**
+	 * Run check if username exists
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_check_username_exists, wp_ajax_ultimatemember_check_username_exists
+	 * @return boolean
+	 */
 	add_action('wp_ajax_nopriv_ultimatemember_check_username_exists', 'ultimatemember_check_username_exists');
 	add_action('wp_ajax_ultimatemember_check_username_exists', 'ultimatemember_check_username_exists');
 	function ultimatemember_check_username_exists() {
@@ -157,4 +167,56 @@
 		}
 
 		die();
+	}
+
+	/**
+	 * Run an ajax to retrieve select options from a callback function
+	 * @uses action hooks: wp_ajax_nopriv_ultimatemember_ajax_select_options, wp_ajax_ultimatemember_ajax_select_options
+	 * @return json
+	 */
+	add_action('wp_ajax_nopriv_ultimatemember_ajax_select_options', 'ultimatemember_ajax_select_options');
+	add_action('wp_ajax_ultimatemember_ajax_select_options', 'ultimatemember_ajax_select_options');
+	function ultimatemember_ajax_select_options() {
+
+		global $ultimatemember;
+		
+		$arr_options = array();
+		$arr_options['status'] = 'success';
+		$arr_options['post'] = $_POST;
+
+		$ultimatemember->fields->set_id = intval( $_POST['form_id'] );
+		$ultimatemember->fields->set_mode  = 'profile';
+		$form_fields = $ultimatemember->fields->get_fields();
+		$arr_options['fields'] = $form_fields;
+
+		$debug = apply_filters('um_ajax_select_options__debug_mode', false );
+		if( $debug ){
+			$arr_options['debug'] = array(
+				$_POST,
+				$form_fields,
+			);
+		}
+
+		if( isset( $_POST['child_callback'] ) && ! empty( $_POST['child_callback'] ) && isset( $form_fields[ $_POST['child_name'] ] )  ){
+			
+			$ajax_source_func = $_POST['child_callback'];
+			
+			// If the requested callback function is added in the form or added in the field option, execute it with call_user_func.
+			if( isset( $form_fields[ $_POST['child_name'] ]['custom_dropdown_options_source'] ) && 
+				! empty( $form_fields[ $_POST['child_name'] ]['custom_dropdown_options_source'] ) &&
+				$form_fields[ $_POST['child_name'] ]['custom_dropdown_options_source'] == $ajax_source_func ){
+
+				$arr_options['field'] = $form_fields[ $_POST['child_name'] ];
+				if( function_exists( $ajax_source_func ) ){
+					$arr_options['items'] = call_user_func( $ajax_source_func );
+				}
+
+			}else{
+				$arr_options['status'] = 'error';
+				$arr_options['message'] = __( 'This is not possible for security reasons.','ultimate-member');
+			}
+
+		}
+
+		wp_send_json( $arr_options );
 	}

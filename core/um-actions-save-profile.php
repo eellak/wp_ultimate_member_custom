@@ -7,50 +7,18 @@
 	function um_update_profile_full_name( $changes ) {
 		global $ultimatemember;
 
-		if ( isset( $changes['first_name'] ) && isset( $changes['last_name'] ) ) {
-			
-			$full_name = $ultimatemember->user->profile['display_name'];
-			$full_name = $ultimatemember->validation->safe_name_in_url( $full_name );
-
-			/* duplicate or not */
-			if ( $ultimatemember->user->user_has_metadata( 'full_name', $full_name ) ) {
-				
-				$duplicates = $ultimatemember->user->user_has_metadata( 'full_name', $full_name );
-				if ( !get_option("um_duplicate_name_{$full_name}") ) {
-				
-					update_option("um_duplicate_name_{$full_name}", $duplicates );
-					$full_name = $full_name . '.' . $duplicates;
-				
-				} else {
-					
-					if ( um_user('_duplicate_id') ) {
-						$duplicates = um_user('_duplicate_id');
-					} else {
-						$duplicates = get_option("um_duplicate_name_{$full_name}") + 1;
-						update_option("um_duplicate_name_{$full_name}", $duplicates );
-						update_user_meta( $ultimatemember->user->id, '_duplicate_id', $duplicates );
-					}
-					
-					$full_name = $full_name . '.' . $duplicates;
-				
-				}
-
-			} else {
-			
-				if ( um_user('_duplicate_id') && $full_name != str_replace( '.' . um_user('_duplicate_id'), '' , um_user('full_name') ) ) {
-					$duplicates = um_user('_duplicate_id');
-					$full_name = str_replace( '.' . um_user('_duplicate_id'), '', $full_name);
-				}
-			}
-
-				update_user_meta( $ultimatemember->user->id, 'full_name', $full_name );
-			
-			
-		}
 		
 		// Sync display name changes
 		$option = um_get_option('display_name');
+		
 		$user_id = $ultimatemember->user->id;
+
+		if( ! isset( $user_id ) || empty( $user_id ) ){
+			$user = get_user_by( 'email', $changes['user_email'] );
+			um_fetch_user( $user->ID );
+			$user_id = $user->ID;
+		}
+		
 		switch ( $option ) {
 			default:
 				break;
@@ -78,11 +46,35 @@
 		}
 
 		if ( isset( $update_name ) ) {
-			wp_update_user( array( 'ID' => $user_id, 'display_name' => $update_name ) );
+			
+			$arr_user =  array( 'ID' => $user_id, 'display_name' => $update_name );
+			$return = wp_update_user( $arr_user );
+
+			if( is_wp_error( $return ) ) {
+				wp_die(  '<pre>' . var_export( array( 'message' => $return->get_error_message(), 'dump' => $arr_user, 'changes' => $changes ), true ) . '</pre>'  );
+			}
+			
+
 		}
+
+		if ( isset( $changes['first_name'] ) && isset( $changes['last_name'] ) ) {
+			
+			$full_name = $ultimatemember->user->profile['display_name'];
+			$full_name = $ultimatemember->validation->safe_name_in_url( $full_name );
+
+			update_user_meta( $ultimatemember->user->id, 'full_name', $full_name );
+
+			
+		}
+		
+		// regenerate slug
+		$ultimatemember->permalinks->profile_url( true );
+
+
+
 	}
 
-		add_action( 'profile_update', 'um_user_profile_update_cc', 10, 2);
+add_action( 'profile_update', 'um_user_profile_update_cc', 10, 2);
 	function um_user_profile_update_cc( $user_id ) {
 		global $ultimatemember;
 		$site_url = get_bloginfo('wpurl');

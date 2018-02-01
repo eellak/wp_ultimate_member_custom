@@ -23,7 +23,7 @@ class UM_Admin_Metabox {
 	function is_UM_admin(){
 		global $current_screen;
 		$screen_id = $current_screen->id;
-		if ( is_admin() && ( strstr( $screen_id, 'ultimatemember') || strstr( $screen_id, 'um_') || strstr($screen_id, 'user') || strstr($screen_id, 'profile') ) )
+		if ( is_admin() && ( strstr( $screen_id, 'ultimatemember'  ) || strstr( $screen_id, 'um_') || strstr($screen_id, 'user') || strstr($screen_id, 'profile') ) )
 			return true;
 		return false;
 	}
@@ -251,23 +251,23 @@ class UM_Admin_Metabox {
 	***/
 	function add_metabox_role() {
 
-		add_meta_box('um-admin-form-sync', __('Sync with WordPress Role','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'side', 'default');
+		add_meta_box('um-admin-form-sync', __('Sync with WordPress Role','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'side', 'default');
 		
-		add_meta_box('um-admin-form-admin', __('Administrative Permissions','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-admin', __('Administrative Permissions','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-general', __('General Permissions','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-general', __('General Permissions','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-profile', __('Profile Access','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-profile', __('Profile Access','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-home', __('Homepage Options','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-home', __('Homepage Options','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-register', __('Registration Options','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-register', __('Registration Options','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-login', __('Login Options','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-login', __('Login Options','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-logout', __('Logout Options','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-logout', __('Logout Options','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 		
-		add_meta_box('um-admin-form-delete', __('Delete Options','ultimatemember'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
+		add_meta_box('um-admin-form-delete', __('Delete Options','ultimate-member'), array(&$this, 'load_metabox_role'), 'um_role', 'normal', 'default');
 	
 		do_action('um_admin_custom_role_metaboxes');
 		
@@ -464,7 +464,7 @@ class UM_Admin_Metabox {
 			case '_visibility':
 				?>
 				
-					<p><label for="_visibility">Visibility <?php $this->tooltip( __('Select where this field should appear. This option should only be changed on the profile form and allows you to show a field in one mode only (edit or view) or in both modes.','ultimatemember') ); ?></label>
+					<p><label for="_visibility">Visibility <?php $this->tooltip( __('Select where this field should appear. This option should only be changed on the profile form and allows you to show a field in one mode only (edit or view) or in both modes.','ultimate-member') ); ?></label>
 						<select name="_visibility" id="_visibility" class="umaf-selectjs" style="width: 100%">
 							<option value="all"  <?php selected( 'all', $this->edit_mode_value ); ?>>View everywhere</option>
 							<option value="edit" <?php selected( 'edit', $this->edit_mode_value ); ?>>Edit mode only</option>
@@ -519,7 +519,7 @@ class UM_Admin_Metabox {
 							<?php
 							$fields = $ultimatemember->query->get_attr( 'custom_fields', $form_id );
 							foreach( $fields as $key => $array ) {
-								if ( isset( $array['title'] ) && $key != $this->edit_array['metakey'] ) {
+								if ( isset( $array['title'] ) && isset( $this->edit_array['metakey'] ) && $key != $this->edit_array['metakey'] ) {
 							?>
 							
 							<option value="<?php echo $key; ?>" <?php selected( $key, $this->edit_mode_value ); ?>><?php echo $array['title']; ?></option>
@@ -687,7 +687,7 @@ class UM_Admin_Metabox {
 			case '_divider_text':
 				?>
 				
-					<p><label for="_divider_text">Optional Text <?php $this->tooltip( __('Optional text to include with the divider','ultimatemember') ); ?></label>
+					<p><label for="_divider_text">Optional Text <?php $this->tooltip( __('Optional text to include with the divider','ultimate-member') ); ?></label>
 						<input type="text" name="_divider_text" id="_divider_text" value="<?php echo ( $this->edit_mode_value ) ? $this->edit_mode_value : ''; ?>" />
 					</p>
 					
@@ -878,7 +878,7 @@ class UM_Admin_Metabox {
 			case '_force_good_pass':
 				?>
 
-					<p><label for="_force_good_pass">Force strong password? <?php $this->tooltip( __('Turn on to force users to create a strong password (A combination of one lowercase letter, one uppercase letter, and one number). If turned on this option is only applied to register forms and not to login forms.','ultimatemember') ); ?></label>
+					<p><label for="_force_good_pass">Force strong password? <?php $this->tooltip( __('Turn on to force users to create a strong password (A combination of one lowercase letter, one uppercase letter, and one number). If turned on this option is only applied to register forms and not to login forms.','ultimate-member') ); ?></label>
 						<?php if ( isset( $this->edit_mode_value ) ) $this->ui_on_off('_force_good_pass', $this->edit_mode_value ); else  $this->ui_on_off('_force_good_pass', 0 ); ?>
 					</p>
 				
@@ -888,7 +888,7 @@ class UM_Admin_Metabox {
 			case '_force_confirm_pass':
 				?>
 
-					<p><label for="_force_confirm_pass">Automatically add a confirm password field? <?php $this->tooltip( __('Turn on to add a confirm password field. If turned on the confirm password field will only show on register forms and not on login forms.','ultimatemember') ); ?></label>
+					<p><label for="_force_confirm_pass">Automatically add a confirm password field? <?php $this->tooltip( __('Turn on to add a confirm password field. If turned on the confirm password field will only show on register forms and not on login forms.','ultimate-member') ); ?></label>
 						<?php if ( isset( $this->edit_mode_value ) ) $this->ui_on_off('_force_confirm_pass', $this->edit_mode_value ); else  $this->ui_on_off('_force_confirm_pass', 1 ); ?>
 					</p>
 				
@@ -1252,7 +1252,7 @@ class UM_Admin_Metabox {
 			case '_min':
 				?>
 				
-					<p><label for="_min">Minimum Number <?php $this->tooltip( __('Minimum number that can be entered in this field','ultimatemember') ); ?></label>
+					<p><label for="_min">Minimum Number <?php $this->tooltip( __('Minimum number that can be entered in this field','ultimate-member') ); ?></label>
 						<input type="text" name="_min" id="_min" value="<?php echo $this->edit_mode_value; ?>" />
 					</p>
 				
@@ -1262,7 +1262,7 @@ class UM_Admin_Metabox {
 			case '_max':
 				?>
 				
-					<p><label for="_max">Maximum Number <?php $this->tooltip( __('Maximum number that can be entered in this field','ultimatemember') ); ?></label>
+					<p><label for="_max">Maximum Number <?php $this->tooltip( __('Maximum number that can be entered in this field','ultimate-member') ); ?></label>
 						<input type="text" name="_max" id="_max" value="<?php echo $this->edit_mode_value; ?>" />
 					</p>
 				
@@ -1505,6 +1505,41 @@ class UM_Admin_Metabox {
 					
 				<?php
 				break;
+
+			case '_custom_dropdown_options_source':
+				?>
+					
+					<p><label for="_custom_dropdown_options_source">Choices Callback<?php $this->tooltip('Add a callback source to retrieve choices.'); ?></label>
+						<input type="text" name="_custom_dropdown_options_source" id="_custom_dropdown_options_source" value="<?php echo htmlspecialchars($this->edit_mode_value, ENT_QUOTES); ?>" />
+					</p>
+		
+				<?php
+				break;
+
+
+			case '_parent_dropdown_relationship':
+				?>
+					
+					<p><label for="_parent_dropdown_relationship">Parent Option<?php $this->tooltip('Dynamically populates the option based from selected parent option.'); ?></label>
+						<select name="_parent_dropdown_relationship" id="_parent_dropdown_relationship" class="umaf-selectjs" style="width: 100%">
+							<option value="">No Selected</option>
+							<?php 
+							if ( $ultimatemember->builtin->custom_fields ) {
+								foreach ($ultimatemember->builtin->custom_fields as $field_key => $array) {
+									if( in_array( $array['type'], array( 'select' ) )
+										&& $field_args['metakey'] != $array['metakey'] ){
+	                                    echo "<option value='".$array['metakey']."' ".selected( $array['metakey'], $this->edit_mode_value  ).">".$array['title']."</option>";
+	                                }
+								}
+							}
+							
+							?>
+						</select>
+					</p>
+		
+				<?php
+				break;
+
 				
 		}
 		

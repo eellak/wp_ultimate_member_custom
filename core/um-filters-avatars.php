@@ -9,9 +9,17 @@
         return $avatar_defaults;
     }
 	
-	/***
-	***	@Override avatars with a high priority
-	***/
+	/**
+	 * Get user UM avatars
+	 * @param  string $avatar       
+	 * @param  string $id_or_email  
+	 * @param  string $size         
+	 * @param  string $avatar_class 
+	 * @param  string $default      
+	 * @param  string $alt          
+	 * @hooks  filter `get_avatar`
+	 * @return string returns avatar in image html elements
+	 */
 	add_filter('get_avatar', 'um_get_avatar', 99999, 5); 
 	function um_get_avatar($avatar = '', $id_or_email='', $size = '96', $avatar_class = '', $default = '', $alt = '') {
 
@@ -27,6 +35,8 @@
 		um_fetch_user( $user_id );
 
 		$avatar = um_user('profile_photo', $size);
+
+		$image_alt = apply_filters("um_avatar_image_alternate_text",  um_user("display_name") );
 
 		if ( ! $avatar && um_get_option('use_gravatars') ) {
 			
@@ -55,12 +65,12 @@
 						
 			}
 			
-			$avatar = '<img src="' .$avatar_url .'?d='. $default . '&amp;s=' . $size . $rating .'" class="func-um_get_avatar gravatar avatar avatar-'.$size.' um-avatar" width="'.$size.'" height="'.$size.'" alt="" />';
+			$avatar = '<img src="' .$avatar_url .'?d='. $default . '&amp;s=' . $size . $rating .'" class="func-um_get_avatar gravatar avatar avatar-'.$size.' um-avatar" width="'.$size.'" height="'.$size.'" alt="'.$image_alt.'" />';
 			
 		}else if( empty( $avatar ) ){
 			$default_avatar_uri = um_get_default_avatar_uri();
 
-			$avatar = '<img src="' .$default_avatar_uri  .'" class="gravatar avatar avatar-'.$size.' um-avatar" width="'.$size.'" height="'.$size.'" alt="" />';
+			$avatar = '<img src="' .$default_avatar_uri  .'" class="gravatar avatar avatar-'.$size.' um-avatar" width="'.$size.'" height="'.$size.'" alt="'.$image_alt.'" />';
 		}
 
 		return $avatar;

@@ -42,7 +42,7 @@
 	***	@update user's profile
 	***/
 	add_action('um_user_edit_profile', 'um_user_edit_profile', 10);
-	function um_user_edit_profile($args){
+	function um_user_edit_profile( $args ){
 
 		global $ultimatemember;
 
@@ -53,7 +53,7 @@
 			if ( um_current_user_can('edit', $args['user_id'] ) ) {
 				$ultimatemember->user->set( $args['user_id'] );
 			} else {
-				wp_die( __('You are not allowed to edit this user.','ultimatemember') );
+				wp_die( __('You are not allowed to edit this user.','ultimate-member') );
 			}
 		} else if ( isset( $args['_user_id'] ) ) {
 			$ultimatemember->user->set( $args['_user_id'] );
@@ -77,7 +77,8 @@
 
 				if ( isset( $args['submitted'][ $key ] ) ) {
 
-					if ( isset( $fields[$key]['type'] ) && in_array( $fields[$key]['type'], array('image','file') ) && um_is_temp_upload( $args['submitted'][ $key ] )  ) {
+					if ( isset( $fields[$key]['type'] ) && in_array( $fields[$key]['type'], array('image','file') ) && 
+						( um_is_temp_upload( $args['submitted'][ $key ] ) || $args['submitted'][ $key ] == 'empty_file' ) ) {
 
 						$files[ $key ] = $args['submitted'][ $key ];
 
@@ -109,18 +110,25 @@
 
 		if ( is_array( $to_update ) ) {
 			$ultimatemember->user->update_profile( $to_update );
+			do_action('um_after_user_updated', um_user('ID') );
+		
 		}
 
+		$files = apply_filters('um_user_pre_updating_files_array', $files);
+		
 		if ( is_array( $files ) ) {
+			do_action('um_before_user_upload', um_user('ID'), $files );
 			$ultimatemember->user->update_files( $files );
+			do_action('um_after_user_upload', um_user('ID'), $files );
 		}
 
-		do_action('um_after_user_updated', um_user('ID') );
-		do_action('um_after_user_upload', um_user('ID') );
 		do_action('um_user_after_updating_profile', $to_update );
 
+		do_action('um_update_profile_full_name', $to_update );
+
+
 		if ( !isset( $args['is_signup'] ) ) {
-			$url = $ultimatemember->permalinks->profile_url();
+			$url = $ultimatemember->permalinks->profile_url( true );
 			exit( wp_redirect( um_edit_my_profile_cancel_uri( $url ) ) );
 		}
 
@@ -191,7 +199,7 @@
 				<span class="um-cover-overlay-s">
 					<ins>
 						<i class="um-faicon-picture-o"></i>
-						<span class="um-cover-overlay-t">'.__('Change your cover photo','ultimatemember').'</span>
+						<span class="um-cover-overlay-t">'.__('Change your cover photo','ultimate-member').'</span>
 					</ins>
 				</span>
 			</span>';
@@ -200,14 +208,16 @@
 
 			<div class="um-cover <?php if ( um_profile('cover_photo') || ( $default_cover && $default_cover['url'] ) ) echo 'has-cover'; ?>" data-user_id="<?php echo um_profile_id(); ?>" data-ratio="<?php echo $args['cover_ratio']; ?>">
 
+				<?php do_action('um_cover_area_content', um_profile_id() ); ?>
+
 				<?php
 
 					if ( $ultimatemember->fields->editing ) {
 
 						$items = array(
-									'<a href="#" class="um-manual-trigger" data-parent=".um-cover" data-child=".um-btn-auto-width">'.__('Change cover photo','ultimatemember').'</a>',
-									'<a href="#" class="um-reset-cover-photo" data-user_id="'.um_profile_id().'">'.__('Remove','ultimatemember').'</a>',
-									'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimatemember').'</a>',
+									'<a href="#" class="um-manual-trigger" data-parent=".um-cover" data-child=".um-btn-auto-width">'.__('Change cover photo','ultimate-member').'</a>',
+									'<a href="#" class="um-reset-cover-photo" data-user_id="'.um_profile_id().'">'.__('Remove','ultimate-member').'</a>',
+									'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimate-member').'</a>',
 						);
 
 						echo $ultimatemember->menu->new_ui( 'bc', 'div.um-cover', 'click', $items );
@@ -247,7 +257,7 @@
 
 						if ( !isset( $ultimatemember->user->cannot_edit ) ) { ?>
 
-						<a href="#" class="um-cover-add um-manual-trigger" data-parent=".um-cover" data-child=".um-btn-auto-width"><span class="um-cover-add-i"><i class="um-icon-plus um-tip-n" title="<?php _e('Upload a cover photo','ultimatemember'); ?>"></i></span></a>
+						<a href="#" class="um-cover-add um-manual-trigger" data-parent=".um-cover" data-child=".um-btn-auto-width"><span class="um-cover-add-i"><i class="um-icon-plus um-tip-n" title="<?php _e('Upload a cover photo','ultimate-member'); ?>"></i></span></a>
 
 					<?php }
 
@@ -320,8 +330,8 @@
 						if ( !um_profile('profile_photo') ) { // has profile photo
 
 							$items = array(
-								'<a href="#" class="um-manual-trigger" data-parent=".um-profile-photo" data-child=".um-btn-auto-width">'.__('Upload photo','ultimatemember').'</a>',
-								'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimatemember').'</a>',
+								'<a href="#" class="um-manual-trigger" data-parent=".um-profile-photo" data-child=".um-btn-auto-width">'.__('Upload photo','ultimate-member').'</a>',
+								'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimate-member').'</a>',
 							);
 
 							$items = apply_filters('um_user_photo_menu_view', $items );
@@ -331,9 +341,9 @@
 						} else if ( $ultimatemember->fields->editing == true ) {
 
 							$items = array(
-								'<a href="#" class="um-manual-trigger" data-parent=".um-profile-photo" data-child=".um-btn-auto-width">'.__('Change photo','ultimatemember').'</a>',
-								'<a href="#" class="um-reset-profile-photo" data-user_id="'.um_profile_id().'" data-default_src="'.um_get_default_avatar_uri().'">'.__('Remove photo','ultimatemember').'</a>',
-								'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimatemember').'</a>',
+								'<a href="#" class="um-manual-trigger" data-parent=".um-profile-photo" data-child=".um-btn-auto-width">'.__('Change photo','ultimate-member').'</a>',
+								'<a href="#" class="um-reset-profile-photo" data-user_id="'.um_profile_id().'" data-default_src="'.um_get_default_avatar_uri().'">'.__('Remove photo','ultimate-member').'</a>',
+								'<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimate-member').'</a>',
 							);
 
 							$items = apply_filters('um_user_photo_menu_edit', $items );
@@ -393,7 +403,7 @@
 					<?php } else if ( $ultimatemember->fields->editing == true  && $args['show_bio'] ) { ?>
 
 					<div class="um-meta-text">
-						<textarea id="um-meta-bio" data-character-limit="<?php echo um_get_option('profile_bio_maxchars'); ?>" placeholder="<?php _e('Tell us a bit about yourself...','ultimatemember'); ?>" name="<?php echo 'description-' . $args['form_id']; ?>" id="<?php echo 'description-' . $args['form_id']; ?>"><?php if ( um_user('description') ) { echo um_user('description'); } ?></textarea>
+						<textarea id="um-meta-bio" data-character-limit="<?php echo um_get_option('profile_bio_maxchars'); ?>" placeholder="<?php _e('Tell us a bit about yourself...','ultimate-member'); ?>" name="<?php echo 'description-' . $args['form_id']; ?>" id="<?php echo 'description-' . $args['form_id']; ?>"><?php if ( um_user('description') ) { echo um_user('description'); } ?></textarea>
 						<span class="um-meta-bio-character um-right"><span class="um-bio-limit"><?php echo um_get_option('profile_bio_maxchars'); ?></span></span>
 						<?php 
 							if ( $ultimatemember->fields->is_error('description') ) {
@@ -406,7 +416,7 @@
 					<?php } ?>
 
 					<div class="um-profile-status <?php echo um_user('account_status'); ?>">
-						<span><?php printf(__('This user account status is %s','ultimatemember'), um_user('account_status_name') ); ?></span>
+						<span><?php printf(__('This user account status is %s','ultimate-member'), um_user('account_status_name') ); ?></span>
 					</div>
 
 					<?php do_action('um_after_header_meta', um_user('ID'), $args ); ?>
@@ -438,7 +448,7 @@
 			$ultimatemember->fields->viewing = 1;
 
 			if ( um_get_requested_user() ) {
-				if ( !um_can_view_profile( um_get_requested_user() ) ) um_redirect_home();
+				if ( !um_can_view_profile( um_get_requested_user() ) && ! um_is_myprofile() ) um_redirect_home();
 				if ( !um_current_user_can('edit', um_get_requested_user() ) ) $ultimatemember->user->cannot_edit = 1;
 				um_fetch_user( um_get_requested_user() );
 			} else {
@@ -491,10 +501,10 @@
 			<?php
 
 			$items = array(
-				'editprofile' => '<a href="'.um_edit_profile_url().'" class="real_url">'.__('Edit Profile','ultimatemember').'</a>',
-				'myaccount' => '<a href="'.um_get_core_page('account').'" class="real_url">'.__('My Account','ultimatemember').'</a>',
-				'logout' => '<a href="'.um_get_core_page('logout').'" class="real_url">'.__('Logout','ultimatemember').'</a>',
-				'cancel' => '<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimatemember').'</a>',
+				'editprofile' => '<a href="'.um_edit_profile_url().'" class="real_url">'.__('Edit Profile','ultimate-member').'</a>',
+				'myaccount' => '<a href="'.um_get_core_page('account').'" class="real_url">'.__('My Account','ultimate-member').'</a>',
+				'logout' => '<a href="'.um_get_core_page('logout').'" class="real_url">'.__('Logout','ultimate-member').'</a>',
+				'cancel' => '<a href="#" class="um-dropdown-hide">'.__('Cancel','ultimate-member').'</a>',
 			);
 
 			$cancel = $items['cancel'];
@@ -697,3 +707,29 @@
 			}
 
 	}
+
+	/**
+	 * Clean up file for new uploaded files
+	 * @param  integer $user_id   
+	 * @param  array $arr_files 
+	 */
+	add_action("um_before_user_upload","um_before_user_upload", 10 ,2 );
+	function um_before_user_upload( $user_id, $arr_files ){
+		global $ultimatemember;
+
+		um_fetch_user( $user_id );
+		
+		foreach ($arr_files as $key => $filename ) {
+			if( um_user( $key ) ){
+				if( basename( $filename ) != basename( um_user( $key ) ) || in_array( $old_filename , array( basename( um_user( $key ) ), basename( $filename ) ) ) || $filename == 'empty_file' ){
+					$old_filename = um_user( $key );
+					$path = $ultimatemember->files->upload_basedir;
+					delete_user_meta( $user_id, $old_filename );
+					if ( file_exists( $path . $user_id . '/' . $old_filename ) ) {
+						unlink( $path . $user_id . '/' . $old_filename );
+					}
+				}
+			}
+		}
+	}
+

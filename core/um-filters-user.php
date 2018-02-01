@@ -8,13 +8,13 @@
 
 		$actions = null;
 
-		$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimatemember') );
-		$actions['um_reject_membership'] = array( 'label' => __('Reject Membership','ultimatemember') );
-		$actions['um_put_as_pending'] = array( 'label' => __('Put as Pending Review','ultimatemember') );
-		$actions['um_resend_activation'] = array( 'label' => __('Resend Activation E-mail','ultimatemember') );
-		$actions['um_deactivate'] = array( 'label' => __('Deactivate','ultimatemember') );
-		$actions['um_reenable'] = array( 'label' => __('Reactivate','ultimatemember') );
-		//$actions['um_delete'] = array( 'label' => __('Delete','ultimatemember') );
+		$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimate-member') );
+		$actions['um_reject_membership'] = array( 'label' => __('Reject Membership','ultimate-member') );
+		$actions['um_put_as_pending'] = array( 'label' => __('Put as Pending Review','ultimate-member') );
+		$actions['um_resend_activation'] = array( 'label' => __('Resend Activation E-mail','ultimate-member') );
+		$actions['um_deactivate'] = array( 'label' => __('Deactivate','ultimate-member') );
+		$actions['um_reenable'] = array( 'label' => __('Reactivate','ultimate-member') );
+		//$actions['um_delete'] = array( 'label' => __('Delete','ultimate-member') );
 		
 		return $actions;
 	}
@@ -32,38 +32,38 @@
 		if ( current_user_can('manage_options') ) {
 		
 			if ( um_user('account_status') == 'awaiting_admin_review' ){
-				$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimatemember') );
-				$actions['um_reject_membership'] = array( 'label' => __('Reject Membership','ultimatemember') );
+				$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimate-member') );
+				$actions['um_reject_membership'] = array( 'label' => __('Reject Membership','ultimate-member') );
 			}
 			
 			if ( um_user('account_status') == 'rejected' ) {
-				$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimatemember') );
+				$actions['um_approve_membership'] = array( 'label' => __('Approve Membership','ultimate-member') );
 			}
 			
 			if ( um_user('account_status') == 'approved' ) {
-				$actions['um_put_as_pending'] = array( 'label' => __('Put as Pending Review','ultimatemember') );
+				$actions['um_put_as_pending'] = array( 'label' => __('Put as Pending Review','ultimate-member') );
 			}
 			
 			if ( um_user('account_status') == 'awaiting_email_confirmation' ) {
-				$actions['um_resend_activation'] = array( 'label' => __('Resend Activation E-mail','ultimatemember') );
+				$actions['um_resend_activation'] = array( 'label' => __('Resend Activation E-mail','ultimate-member') );
 			}
 			
 			if (  um_user('account_status') != 'inactive' ) {
-				$actions['um_deactivate'] = array( 'label' => __('Deactivate this account','ultimatemember') );
+				$actions['um_deactivate'] = array( 'label' => __('Deactivate this account','ultimate-member') );
 			}
 			
 			if (  um_user('account_status') == 'inactive' ) {
-				$actions['um_reenable'] = array( 'label' => __('Reactivate this account','ultimatemember') );
+				$actions['um_reenable'] = array( 'label' => __('Reactivate this account','ultimate-member') );
 			}
 			
 			if ( um_current_user_can( 'delete', um_profile_id() ) ) {
-				$actions['um_delete'] = array( 'label' => __('Delete this user','ultimatemember') );
+				$actions['um_delete'] = array( 'label' => __('Delete this user','ultimate-member') );
 			}
 			
 		}
 		
 		if ( current_user_can('delete_users') ) {
-			$actions['um_switch_user'] = array( 'label' => __('Login as this user','ultimatemember') );
+			$actions['um_switch_user'] = array( 'label' => __('Login as this user','ultimate-member') );
 		}
 		
 		
@@ -83,29 +83,33 @@
 		global $wpdb;
 
 		$permalink_base = um_get_option('permalink_base');
-			$user_query = new WP_User_Query( 
+		
+		$user_query = new WP_User_Query( 
 				array(
 					 'meta_query'    => array(
 			            'relation'  => 'AND',
 			            array( 
-			                'key'     => 'um_user_profile_url_slug_name_'.$raw,
-			            ),
-			            array(
-			                'key'     => 'account_status',
-			                'value'   => 'awaiting_admin_review',
-			                'compare' => '!='
+			                'key'     => 'um_user_profile_url_slug_'.$permalink_base,
+			                'value'   => $raw,
+			                'compare' => '='
 			            )
-			        )
-				)
+			        ),
+					'fields' => array('ID')
+			    )
 
-			);
-				$result = current( $user_query->get_results() );
-			  $slugname =  '';
+		);
 
-		if( isset( $result->data->ID ) ){
-			  $slugname =  get_user_meta( $result->data->ID, 'um_user_profile_url_slug_name_'.$raw, true );
-			  $value = $slugname;
+		if( $user_query->total_users > 0 ){	
+			 
+			 $result = current( $user_query->get_results() );
+			 $slugname =  '';
+
+			if( isset( $result->ID ) ){
+				  $slugname =  get_user_meta( $result->ID, 'um_user_profile_url_slug_'.$permalink_base, true );
+				  $value = $slugname;
+			}
 		}
+
 
 		$value = apply_filters("um_permalink_base_before_filter", $value );
 		$raw_value = $value;

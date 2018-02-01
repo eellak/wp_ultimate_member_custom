@@ -1,35 +1,45 @@
 <?php
 
-	/***
-	***	@account automatically approved
-	***/
+	/**
+	 * Account automatically approved
+	 */
 	add_action('um_post_registration_approved_hook', 'um_post_registration_approved_hook', 10, 2);
 	function um_post_registration_approved_hook($user_id, $args){
 		global $ultimatemember;
+
+		um_fetch_user( $user_id );
+
 		$ultimatemember->user->approve();
 	}
 
-	/***
-	***	@account needs email validation
-	***/
+	/**
+	 * Account needs email validation
+	 */
 	add_action('um_post_registration_checkmail_hook', 'um_post_registration_checkmail_hook', 10, 2);
 	function um_post_registration_checkmail_hook($user_id, $args){
 		global $ultimatemember;
+
+		um_fetch_user( $user_id );
+
 		$ultimatemember->user->email_pending();
 	}
 
-	/***
-	***	@account needs admin review
-	***/
+	/**
+	 * Account needs admin review
+	 */
 	add_action('um_post_registration_pending_hook', 'um_post_registration_pending_hook', 10, 2);
 	function um_post_registration_pending_hook($user_id, $args){
 		global $ultimatemember;
+
+		um_fetch_user( $user_id );
+
 		$ultimatemember->user->pending();
+		
 	}
 
-	/***
-	***	@add user to wordpress
-	***/
+	/**
+	 * Add user to wordpress
+	 */
 	add_action('um_add_user_frontend', 'um_add_user_frontend', 10);
 	function um_add_user_frontend($args){
 		global $ultimatemember;
@@ -70,7 +80,7 @@
 
 		$unique_userID = $ultimatemember->query->count_users() + 1;
 
-		if ( ! isset( $user_login ) ) {
+		if ( ! isset( $user_login ) ||  strlen( $user_login ) > 30 && ! is_email( $user_login ) ) {
 			$user_login = 'user' . $unique_userID;
 		}
 
@@ -84,19 +94,24 @@
 
 
 		if( ! isset( $user_email ) ) {
-			$user_email = 'nobody' . $unique_userID . '@' . get_bloginfo('name');
+			$site_url = @$_SERVER['SERVER_NAME'];
+			$user_email = 'nobody' . $unique_userID . '@' . $site_url;
+			$user_email = apply_filters("um_user_register_submitted__email", $user_email );
 		}
 
 
 		$creds['user_login'] = $user_login;
 		$creds['user_password'] = $user_password;
-		$creds['user_email'] = $user_email;
+		$creds['user_email'] = trim( $user_email );
 
+		$args = apply_filters('um_add_user_frontend_submitted', $args );
+		
 		$args['submitted'] = array_merge( $args['submitted'], $creds);
 		$args = array_merge($args, $creds);
 		
 		unset( $args['user_id'] );
 		
+
 		do_action('um_before_new_user_register', $args);
 
 		$user_id = wp_create_user( $user_login, $user_password, $user_email );
@@ -106,9 +121,9 @@
 		return $user_id;
 	}
 
-	/***
-	***	@after adding a new user
-	***/
+	/**
+	 * After adding a new user
+	 */
 	add_action('um_after_new_user_register', 'um_after_new_user_register', 10, 2);
 	function um_after_new_user_register( $user_id, $args ){
 		global $ultimatemember, $pagenow;
@@ -135,14 +150,20 @@
 		do_action('um_post_registration_save', $user_id, $args);
 
 		do_action('um_post_registration_listener', $user_id, $args);
+		
+		do_action('um_update_profile_full_name', $args );
 
 		do_action('um_post_registration', $user_id, $args);
 
+		if( ! is_admin() ){
+			do_action('user_register', $user_id );
+		}
+
 	}
 
-	/***
-	***	@Update user's profile after registration
-	***/
+	/**
+	 * Update user's profile after registration
+	 */
 	add_action('um_post_registration_save', 'um_post_registration_save', 10, 2);
 	function um_post_registration_save( $user_id, $args ){
 		global $ultimatemember;
@@ -155,14 +176,14 @@
 
 	}
 
-	/***
-	***	@post-registration admin listender
-	***/
+	/**
+	 * Post-registration admin listener
+	 */
 	add_action('um_post_registration_listener', 'um_post_registration_listener', 10, 2);
 	function um_post_registration_listener( $user_id, $args ){
 		global $ultimatemember;
-
-		if ( um_user('status') != 'pending' ) {
+        
+        if ( um_user('status') != 'pending' ) {
 			$ultimatemember->mail->send( um_admin_email(), 'notification_new_user', array('admin' => true ) );
 		} else {
 			$ultimatemember->mail->send( um_admin_email(), 'notification_review', array('admin' => true ) );
@@ -170,17 +191,17 @@
 
 	}
 
-	/***
-	***	@post-registration procedure
-	***/
+	/**
+	 * Post-registration procedure
+	 */
 	add_action('um_post_registration', 'um_post_registration', 10, 2);
 	function um_post_registration( $user_id, $args ){
 		global $ultimatemember;
 		unset(  $args['user_id'] );
 		extract($args);
-
-		$status = um_user('status');
-
+        
+        $status = um_user('status');
+         
 		do_action("um_post_registration_global_hook", $user_id, $args);
 
 		do_action("um_post_registration_{$status}_hook", $user_id, $args);
@@ -197,6 +218,7 @@
             if ( $status == 'approved' ) {
 
 				$ultimatemember->user->auto_login( $user_id );
+				$ultimatemember->permalinks->profile_url( true );
 
 				do_action('um_registration_after_auto_login', $user_id );
 
@@ -216,9 +238,12 @@
 				}
 
 				if ( um_user( $status . '_action' ) == 'show_message' && um_user( $status . '_message' ) != '' ) {
-					$url = $ultimatemember->permalinks->get_current_url();
-					$url =  add_query_arg( 'message', esc_attr( $status ), $url );
-					$url =  add_query_arg( 'uid', esc_attr( um_user('ID') ), $url );
+
+					$role_id = $ultimatemember->user->get_role_name( um_user('role'), true );
+					$url  = $ultimatemember->permalinks->get_current_url();
+					$url  = add_query_arg( 'message', esc_attr( $status ), $url );
+					$url  = add_query_arg( 'um_role', esc_attr( $role_id ), $url );
+					$url  = add_query_arg( 'um_form_id', esc_attr( $form_id ), $url );
 
 					exit( wp_redirect( $url ) );
 				}
@@ -229,9 +254,9 @@
 
 	}
 
-	/***
-	***	@new user registration
-	***/
+	/**
+	 * New user registration
+	 */
 	add_action('um_user_registration', 'um_user_registration', 10);
 	function um_user_registration($args){
 		global $ultimatemember;
@@ -241,9 +266,9 @@
 
 	}
 
-	/***
-	***	@form processing
-	***/
+	/**
+	 * Form Processing
+	 */
 	add_action('um_submit_form_register', 'um_submit_form_register', 10);
 	function um_submit_form_register($args){
 		global $ultimatemember;
@@ -254,9 +279,9 @@
 
 	}
 
-	/***
-	***	@Register user with predefined role in options
-	***/
+	/**
+	 * Register user with predefined role in options
+	 */
 	add_action('um_after_register_fields', 'um_add_user_role');
 	function um_add_user_role( $args ){
 
@@ -272,6 +297,8 @@
 			$role = um_get_option('default_role');
 		}
 
+		if( empty( $role ) ) return;
+
 		$role = apply_filters('um_register_hidden_role_field', $role );
 		if( $role ){
 			echo '<input type="hidden" name="role" id="role" value="' . $role . '" />';
@@ -279,9 +306,9 @@
 
 	}
 
-	/***
-	***	@Show the submit button (highest priority)
-	***/
+	/**
+	 * Show the submit button 
+	 */
 	add_action('um_after_register_fields', 'um_add_submit_button_to_register', 1000);
 	function um_add_submit_button_to_register($args){
 		global $ultimatemember;
@@ -304,12 +331,12 @@
 
 			<?php if ( isset($args['secondary_btn']) && $args['secondary_btn'] != 0 ) { ?>
 
-			<div class="um-left um-half"><input type="submit" value="<?php echo $primary_btn_word; ?>" class="um-button" /></div>
-			<div class="um-right um-half"><a href="<?php echo $secondary_btn_url; ?>" class="um-button um-alt"><?php echo $secondary_btn_word; ?></a></div>
+			<div class="um-left um-half"><input type="submit"  value="<?php echo __( $primary_btn_word,'ultimate-member'); ?>" class="um-button" id="um-submit-btn" /></div>
+			<div class="um-right um-half"><a href="<?php echo $secondary_btn_url; ?>" class="um-button um-alt"><?php echo __( $secondary_btn_word,'ultimate-member'); ?></a></div>
 
 			<?php } else { ?>
 
-			<div class="um-center"><input type="submit" value="<?php echo $primary_btn_word; ?>" class="um-button" /></div>
+			<div class="um-center"><input type="submit" value="<?php echo __( $primary_btn_word,'ultimate-member'); ?>" class="um-button" id="um-submit-btn" /></div>
 
 			<?php } ?>
 
@@ -320,13 +347,24 @@
 		<?php
 	}
 
-	/***
-	***	@Show Fields
-	***/
+	/**
+	 * Show Fields
+	 */
 	add_action('um_main_register_fields', 'um_add_register_fields', 100);
 	function um_add_register_fields($args){
 		global $ultimatemember;
 
 		echo $ultimatemember->fields->display( 'register', $args );
+
+	}
+
+	/**
+	 * Set user gravatar with user_email
+	 */
+	add_action('user_register','um_user_register_generate_gravatar');
+	function um_user_register_generate_gravatar( $user_id ){
+		global $ultimatemember;
+
+		$ultimatemember->user->set_gravatar( $user_id );
 
 	}

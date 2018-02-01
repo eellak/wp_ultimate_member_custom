@@ -52,7 +52,7 @@ class UM_Enqueue {
 			$c_url = $ultimatemember->permalinks->get_current_url( get_option('permalink_structure') );
 
 			foreach( $exclude as $match ) {
-				if ( strstr( $c_url, untrailingslashit( $match ) ) ) {
+				if ( ! empty( $c_url ) && strstr( $c_url, untrailingslashit( $match ) ) ) {
 					return;
 				}
 			}
@@ -121,7 +121,7 @@ class UM_Enqueue {
 			wp_enqueue_script('um_datetime_locale');
 		}
 
-		if(is_object($post) && has_shortcode($post->post_content,'ultimatemember')) {
+		if(is_object($post) && has_shortcode($post->post_content,'ultimatemember'  )) {
 			wp_dequeue_script('jquery-form');
 		}
 	}

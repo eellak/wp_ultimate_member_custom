@@ -7,6 +7,7 @@ class UM_User {
 		$this->id = 0;
 		$this->usermeta = null;
 		$this->data = null;
+		$this->profile = null;
 
 		$this->banned_keys = array(
 			'metabox','postbox','meta-box',
@@ -60,11 +61,12 @@ class UM_User {
 			
 			$um_user_role = get_user_meta($user->ID,'role',true);
 			?>
+			<h2><?php _e('Ultimate Member','ultimate-member') ?></h2>
 			<table class="form-table">
 				<tbody>
 					<tr>
 						<th>
-							<label for="um_role"><?php _e( 'Community Role', 'ultimatemember' ); ?></label>
+							<label for="um_role"><?php _e( 'Community Role', 'ultimate-member'); ?></label>
 						</th>
 						<td>
 							<select name="um_role" id="um_role">
@@ -72,12 +74,14 @@ class UM_User {
 							<option value="<?php echo $key; ?>" <?php selected( $um_user_role, $key ); ?> ><?php echo $value; ?></option>
 							<?php } ?>
 							</select>
-							<span class="description"><?php _e( 'Assign or change the community role for this user', 'ultimatemember' ); ?></span>
+							<span class="description"><?php _e( 'Assign or change the community role for this user', 'ultimate-member'); ?></span>
 						</td>
 					</tr>
 				</tbody>
 			</table>
 		<?php }
+
+		do_action( 'um_user_profile_section' );
 	}
 
 	/**
@@ -117,7 +121,7 @@ class UM_User {
 
 	function get_cached_data( $user_id ) {
 
-		$disallow_cache = get_option('um_profile_object_cache_stop');
+		$disallow_cache = um_get_option('um_profile_object_cache_stop');
 		if( $disallow_cache ){
 			return '';
 		}
@@ -134,7 +138,7 @@ class UM_User {
 
 	function setup_cache( $user_id, $profile ) {
 		
-		$disallow_cache = get_option('um_profile_object_cache_stop');
+		$disallow_cache = um_get_option('um_profile_object_cache_stop');
 		if( $disallow_cache ){
 			return '';
 		}
@@ -233,23 +237,23 @@ class UM_User {
 			}
 
 			if ( $this->usermeta['account_status'][0] == 'approved' ) {
-				$this->usermeta['account_status_name'][0] = __('Approved','ultimatemember');
+				$this->usermeta['account_status_name'][0] = __('Approved','ultimate-member');
 			}
 
 			if ( $this->usermeta['account_status'][0] == 'awaiting_email_confirmation' ) {
-				$this->usermeta['account_status_name'][0] = __('Awaiting E-mail Confirmation','ultimatemember');
+				$this->usermeta['account_status_name'][0] = __('Awaiting E-mail Confirmation','ultimate-member');
 			}
 
 			if ( $this->usermeta['account_status'][0] == 'awaiting_admin_review' ) {
-				$this->usermeta['account_status_name'][0] = __('Pending Review','ultimatemember');
+				$this->usermeta['account_status_name'][0] = __('Pending Review','ultimate-member');
 			}
 
 			if ( $this->usermeta['account_status'][0] == 'rejected' ) {
-				$this->usermeta['account_status_name'][0] = __('Membership Rejected','ultimatemember');
+				$this->usermeta['account_status_name'][0] = __('Membership Rejected','ultimate-member');
 			}
 
 			if ( $this->usermeta['account_status'][0] == 'inactive' ) {
-				$this->usermeta['account_status_name'][0] = __('Membership Inactive','ultimatemember');
+				$this->usermeta['account_status_name'][0] = __('Membership Inactive','ultimate-member');
 			}
 
 			// add user meta
@@ -324,8 +328,15 @@ class UM_User {
 	 *
 	 */
 	function auto_login( $user_id, $rememberme = 0 ) {
-		wp_set_current_user($user_id);
-		wp_set_auth_cookie($user_id, $rememberme );
+		
+		wp_set_current_user( $user_id );
+		
+		wp_set_auth_cookie( $user_id, $rememberme );
+		
+		$user = get_user_by('ID', $user_id );
+		
+		do_action( 'wp_login', $user->user_login, $user );
+
 	}
 
 	/***
@@ -344,6 +355,8 @@ class UM_User {
 		if ( isset( $submitted['confirm_user_password'] ) ) {
 			unset( $submitted['confirm_user_password'] );
 		}
+
+		$submitted = apply_filters('um_before_save_filter_submitted', $submitted );
 
 		do_action('um_before_save_registration_details', $this->id, $submitted );
 
@@ -373,9 +386,10 @@ class UM_User {
 
 		do_action('um_before_user_role_is_changed');
 
+		$this->profile['role'] = $role;
+		
 		do_action('um_member_role_upgrade', $role, $this->profile['role'] );
 
-		$this->profile['role'] = $role;
 		$this->update_usermeta_info('role');
 
 		do_action('um_after_user_role_is_changed');
@@ -688,6 +702,8 @@ class UM_User {
 			}
 		}
 
+		wp_reset_query();  
+
 		$ultimatemember->profile->arr_user_roles[ 'is_1' ][ $slug ] = $role_id;
 		$ultimatemember->profile->arr_user_roles[ 'is_'  ][ $slug ] = $role_title;
 
@@ -696,6 +712,34 @@ class UM_User {
 		}
 		
 		return $role_title;
+	}
+
+	/**
+	 * Get role slug by ID
+	 * @param  integer $id 
+	 * @return string
+	 */
+	function get_role_slug_by_id( $id ) {
+		global $wpdb, $ultimatemember;
+
+
+		$args = array(
+		    	'posts_per_page' => 1,
+		    	'post_type' => 'um_role',
+		    	'page_id'	=> $id,
+		    	'post_status' => array('publish'),
+		);
+
+		$roles = new WP_Query( $args );
+		$role_slug = '';
+		
+		if ( $roles->have_posts() ) {
+			$role_slug = $roles->post->post_name;
+		}
+
+		wp_reset_query();  
+
+		return $role_slug;
 	}
 
 	/***
@@ -757,14 +801,14 @@ class UM_User {
 	***	@Get admin actions for individual user
 	***/
 	function get_admin_actions() {
-		$items = '';
+		$items = array();
 		$actions = array();
 		$actions = apply_filters('um_admin_user_actions_hook', $actions );
 		if ( !isset( $actions ) || empty( $actions ) ) return false;
 		foreach($actions as $id => $arr ) {
 			$url = add_query_arg('um_action', $id );
 			$url = add_query_arg('uid', um_profile_id(), $url );
-			$items[] = '<a href="' . $url .'" class="real_url">' . $arr['label'] . '</a>';
+			$items[] = '<a href="' . $url .'" class="real_url '.$id.'-item">' . $arr['label'] . '</a>';
 		}
 		return $items;
 	}
@@ -797,7 +841,7 @@ class UM_User {
 	 */
 	function is_private_profile( $user_id ) {
 		$privacy = get_user_meta( $user_id, 'profile_privacy', true );
-		if ( $privacy == __('Only me','ultimatemember') ) {
+		if ( $privacy == __('Only me','ultimate-member') ) {
 			return true;
 		}
 		return false;
@@ -875,10 +919,7 @@ class UM_User {
 		$args['ID'] = $this->id;
 		$changes = apply_filters('um_before_update_profile', $changes, $this->id);
 
-	    // hook for name changes
-		do_action('um_update_profile_full_name', $changes );
-
-		// save or update profile meta
+	   	// save or update profile meta
 		foreach( $changes as $key => $value ) {
             if ( !in_array( $key, $this->update_user_keys ) ) {
             	
@@ -929,27 +970,69 @@ class UM_User {
 	function user_exists_by_name( $value ) {
 
 		global $ultimatemember;
+		
+		// Permalink base
+		$permalink_base = um_get_option('permalink_base');
+
+		$raw_value = $value;
 		$value = $ultimatemember->validation->safe_name_in_url( $value );
 		$value = um_clean_user_basename( $value );
 
-		// if duplicate full name, return the user id
-		if( preg_match( '/( |\.|\-)\d+$/', $value, $matches ) )
-		{
-			return $matches[0];
-		}
+		// Search by Profile Slug
+		$args = array(
+				"fields" => array("ID"),
+				'meta_query' => array(
+			        'relation' => 'OR',
+			        array(
+			        	'key'		=>  'um_user_profile_url_slug_'.$permalink_base,
+			        	'value'		=> strtolower( $raw_value ),
+			        	'compare'	=> '='
+
+			        )
+			       
+			    )
+		);
 		
-		$ids = get_users(array( 'fields' => 'ID', 'meta_key' => 'full_name','meta_value' => $value ,'meta_compare' => '=') );
-		if ( isset( $ids[0] ) && ! empty( $ids[0] ) ){
-			return $ids[0];
+		
+		$ids = new WP_User_Query( $args );
+
+		if( $ids->total_users > 0 ){
+			$um_user_query = current( $ids->get_results() );
+			return $um_user_query->ID;
+		}
+
+		// Search by Display Name or ID
+		$args = array(
+				"fields" => array("ID"),
+				"search" => $value,
+				'search_columns' => array( 'display_name','ID' )
+		);	
+		
+		$ids = new WP_User_Query( $args );
+		
+		if( $ids->total_users > 0 ){
+			$um_user_query = current( $ids->get_results() );
+			return $um_user_query->ID;
 		}
 
 
+		// Search By User Login
 		$value = str_replace(".", "_", $value );
 		$value = str_replace(" ", "", $value );
 		
-		$user = get_user_by( 'login', $value );
-		if ( isset( $user->ID ) &&  $user->ID > 0 ){
-			return $user->ID;
+		$args = array(
+				"fields" => array("ID"),
+				"search" => $value,
+				'search_columns' => array(
+			        'user_login',
+			    )
+		);
+
+		$ids = new WP_User_Query( $args );
+		
+		if( $ids->total_users > 0 ){
+			$um_user_query = current( $ids->get_results() );
+			return $um_user_query->ID;
 		}
 
 		return false;
@@ -1024,6 +1107,24 @@ class UM_User {
 		}
 
 		return $user_id;
+	}
+
+	/**
+	 * Set gravatar hash id
+	 */
+	function set_gravatar( $user_id ){
+
+		um_fetch_user( $user_id );
+		$email_address = um_user('user_email');
+		$hash_email_address = '';
+
+		if( $email_address ){
+			$hash_email_address = md5( $email_address );
+			$this->profile['synced_gravatar_hashed_id'] = $hash_email_address;
+			$this->update_usermeta_info('synced_gravatar_hashed_id');
+		}
+
+		return $hash_email_address;
 	}
 
 }

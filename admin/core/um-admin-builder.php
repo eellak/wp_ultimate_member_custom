@@ -50,6 +50,11 @@ class UM_Admin_Builder {
 	***	@get fields in row
 	***/
 	function get_fields_by_row( $row_id ) {
+
+		if( empty( $this->global_fields) || ! is_array( $this->global_fields ) ){
+			$this->global_fields = array();
+		}
+		
 		foreach( $this->global_fields as $key => $array ) {
 			if ( !isset( $array['in_row'] ) || ( isset( $array['in_row'] ) && $array['in_row'] == $row_id ) ) {
 				$results[$key] = $array;
@@ -89,8 +94,8 @@ class UM_Admin_Builder {
 		
 			<!-- Master Row Actions -->
 			<div class="um-admin-drag-row-icons">
-					<a href="#" class="um-admin-drag-rowsub-add um-admin-tipsy-n" title="<?php _e('Add Row','ultimatemember'); ?>" data-row_action="add_subrow"><i class="um-icon-plus"></i></a>
-					<a href="#" class="um-admin-drag-row-edit um-admin-tipsy-n" title="<?php _e('Edit Row','ultimatemember'); ?>" data-modal="UM_edit_row" data-modal-size="normal" data-dynamic-content="um_admin_edit_field_popup" data-arg1="row" data-arg2="<?php echo $this->form_id; ?>" data-arg3="_um_row_1"><i class="um-faicon-pencil"></i></a>
+					<a href="#" class="um-admin-drag-rowsub-add um-admin-tipsy-n" title="<?php _e('Add Row','ultimate-member'); ?>" data-row_action="add_subrow"><i class="um-icon-plus"></i></a>
+					<a href="#" class="um-admin-drag-row-edit um-admin-tipsy-n" title="<?php _e('Edit Row','ultimate-member'); ?>" data-modal="UM_edit_row" data-modal-size="normal" data-dynamic-content="um_admin_edit_field_popup" data-arg1="row" data-arg2="<?php echo $this->form_id; ?>" data-arg3="_um_row_1"><i class="um-faicon-pencil"></i></a>
 					<span class="um-admin-drag-row-start"><i class="um-icon-arrow-move"></i></span>
 			</div><div class="um-admin-clear"></div>
 			
@@ -127,8 +132,12 @@ class UM_Admin_Builder {
 		
 		} else {
 		
-		$this->global_fields = $fields;
-
+		if( empty( $fields) || ! is_array( $fields ) ){
+			$this->global_fields = array();
+		}else{
+		 	$this->global_fields = $fields;
+		}
+		
 		foreach( $this->global_fields as $key => $array ) {
 			if ( $array['type'] == 'row' ) {
 				$rows[$key] = $array;
@@ -155,11 +164,11 @@ class UM_Admin_Builder {
 		
 			<!-- Master Row Actions -->
 			<div class="um-admin-drag-row-icons">
-					<a href="#" class="um-admin-drag-rowsub-add um-admin-tipsy-n" title="<?php _e('Add Row','ultimatemember'); ?>" data-row_action="add_subrow"><i class="um-icon-plus"></i></a>
-					<a href="#" class="um-admin-drag-row-edit um-admin-tipsy-n" title="<?php _e('Edit Row','ultimatemember'); ?>" data-modal="UM_edit_row" data-modal-size="normal" data-dynamic-content="um_admin_edit_field_popup" data-arg1="row" data-arg2="<?php echo $this->form_id; ?>" data-arg3="<?php echo $row_id; ?>"><i class="um-faicon-pencil"></i></a>
+					<a href="#" class="um-admin-drag-rowsub-add um-admin-tipsy-n" title="<?php _e('Add Row','ultimate-member'); ?>" data-row_action="add_subrow"><i class="um-icon-plus"></i></a>
+					<a href="#" class="um-admin-drag-row-edit um-admin-tipsy-n" title="<?php _e('Edit Row','ultimate-member'); ?>" data-modal="UM_edit_row" data-modal-size="normal" data-dynamic-content="um_admin_edit_field_popup" data-arg1="row" data-arg2="<?php echo $this->form_id; ?>" data-arg3="<?php echo $row_id; ?>"><i class="um-faicon-pencil"></i></a>
 					<span class="um-admin-drag-row-start"><i class="um-icon-arrow-move"></i></span>
 					<?php if ( $row_id != '_um_row_1' ) {?>
-					<a href="#" class="um-admin-tipsy-n" title="<?php _e('Delete Row','ultimatemember'); ?>" data-remove_element="um-admin-drag-row"><i class="um-faicon-trash-o"></i></a>
+					<a href="#" class="um-admin-tipsy-n" title="<?php _e('Delete Row','ultimate-member'); ?>" data-remove_element="um-admin-drag-row"><i class="um-faicon-trash-o"></i></a>
 					<?php } ?>
 			</div><div class="um-admin-clear"></div>
 			

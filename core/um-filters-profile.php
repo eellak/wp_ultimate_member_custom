@@ -7,7 +7,7 @@
 	function um_profile_tabs( $tabs ) {
 
 		$tabs['main'] = array(
-			'name' => __('About','ultimatemember'),
+			'name' => __('About','ultimate-member'),
 			'icon' => 'um-faicon-user'
 		);
 
@@ -46,15 +46,22 @@
 	function um_dynamic_user_profile_title( $title, $id = '' ) {
 		global $ultimatemember;
 
-		if( is_admin() )
-			return $title;
 
-		if (  $id == $ultimatemember->permalinks->core['user'] ) {
+		if( is_admin() ){
+			return $title;
+		}
+
+		if (  $id == $ultimatemember->permalinks->core['user'] && in_the_loop() ) {
 			if ( um_is_core_page('user') && um_get_requested_user() ) {
 				$title = um_get_display_name( um_get_requested_user() );
 			} else if ( um_is_core_page('user') && is_user_logged_in() ) {
 				$title = um_get_display_name( get_current_user_id() );
 			}
+		}
+
+
+		if( ! function_exists('utf8_decode') ){
+			return $title;
 		}
 
 		return (strlen($title)!==strlen(utf8_decode($title))) ? $title : utf8_encode($title);
@@ -74,7 +81,7 @@
 		if( $file_size >= 999999999  ){
 
 		}else{
-			$args['cover_photo']['upload_text'] .= '<small class=\'um-max-filesize\'>( '.__('max','ultimatemember').': <span>'.$file_size.$unit.'</span> )</small>';
+			$args['cover_photo']['upload_text'] .= '<small class=\'um-max-filesize\'>( '.__('max','ultimate-member').': <span>'.$file_size.$unit.'</span> )</small>';
 		}
 		return $args;
 	}
@@ -92,7 +99,7 @@
 		if( $file_size >= 999999999  ){
 
 		}else{
-			$args['profile_photo']['upload_text'] .= '<small class=\'um-max-filesize\'>( '.__('max','ultimatemember').': <span>'.$file_size.$unit.'</span> )</small>';
+			$args['profile_photo']['upload_text'] .= '<small class=\'um-max-filesize\'>( '.__('max','ultimate-member').': <span>'.$file_size.$unit.'</span> )</small>';
 		}
 		return $args;
 	}

@@ -20,8 +20,9 @@ class UM_REST_API {
 		add_action( 'init',                     array( $this, 'add_endpoint'     ) );
 		add_action( 'template_redirect',        array( $this, 'process_query'    ), -1 );
 		add_filter( 'query_vars',               array( $this, 'query_vars'       ) );
-		add_action( 'show_user_profile',        array( $this, 'user_key_field'   ) );
-		add_action( 'edit_user_profile',        array( $this, 'user_key_field'   ) );
+		
+		add_action( 'um_user_profile_section',  array( $this, 'user_key_field'   ), 2 );
+		
 		add_action( 'personal_options_update',  array( $this, 'update_key'       ) );
 		add_action( 'edit_user_profile_update', array( $this, 'update_key'       ) );
 
@@ -130,7 +131,7 @@ class UM_REST_API {
 	 */
 	private function missing_auth() {
 		$error = array();
-		$error['error'] = __( 'You must specify both a token and API key!', 'ultimatemember' );
+		$error['error'] = __( 'You must specify both a token and API key!', 'ultimate-member');
 
 		$this->data = $error;
 		$this->output( 401 );
@@ -141,7 +142,7 @@ class UM_REST_API {
 	 */
 	private function invalid_auth() {
 		$error = array();
-		$error['error'] = __( 'Your request could not be authenticated', 'ultimatemember' );
+		$error['error'] = __( 'Your request could not be authenticated', 'ultimate-member');
 
 		$this->data = $error;
 		$this->output( 401 );
@@ -152,7 +153,7 @@ class UM_REST_API {
 	 */
 	private function invalid_key() {
 		$error = array();
-		$error['error'] = __( 'Invalid API key', 'ultimatemember' );
+		$error['error'] = __( 'Invalid API key', 'ultimate-member');
 
 		$this->data = $error;
 		$this->output( 401 );
@@ -290,12 +291,12 @@ class UM_REST_API {
 		$error = array();
 		
 		if ( !$id ) {
-			$error['error'] = __('You must provide a user ID','ultimatemember');
+			$error['error'] = __('You must provide a user ID','ultimate-member');
 			return $error;
 		}
 		
 		if ( !$data ) {
-			$error['error'] = __('You need to provide data to update','ultimatemember');
+			$error['error'] = __('You need to provide data to update','ultimate-member');
 			return $error;
 		}
 		
@@ -304,20 +305,20 @@ class UM_REST_API {
 		switch ( $data ) {
 			case 'status':
 				$ultimatemember->user->set_status( $value );
-				$response['success'] = __('User status has been changed.','ultimatemember');
+				$response['success'] = __('User status has been changed.','ultimate-member');
 				break;
 			case 'role':
 				$ultimatemember->user->set_role( $value );
-				$response['success'] = __('User level has been changed.','ultimatemember');
+				$response['success'] = __('User level has been changed.','ultimate-member');
 				break;
 			case 'wp_role':
 				$wp_user_object = new WP_User( $id );
 				$wp_user_object->set_role( $value );
-				$response['success'] = __('User WordPress role has been changed.','ultimatemember');
+				$response['success'] = __('User WordPress role has been changed.','ultimate-member');
 				break;
 			default:
 				update_user_meta( $id, $data, esc_attr( $value ) );
-				$response['success'] = __('User meta has been changed.','ultimatemember');
+				$response['success'] = __('User meta has been changed.','ultimate-member');
 				break;
 		}
 		
@@ -335,7 +336,7 @@ class UM_REST_API {
 		$error = array();
 		
 		if ( !$id ) {
-			$error['error'] = __('You must provide a user ID','ultimatemember');
+			$error['error'] = __('You must provide a user ID','ultimate-member');
 			return $error;
 		}
 		
@@ -343,7 +344,7 @@ class UM_REST_API {
 			global $um_followers;
 			$results = $um_followers->api->followers( $id );
 			if ( !$results ) {
-				$error['error'] = __('No users were found','ultimatemember');
+				$error['error'] = __('No users were found','ultimate-member');
 				return $error;
 			}
 			$response['followers']['count'] = $um_followers->api->count_followers_plain( $id );
@@ -354,7 +355,7 @@ class UM_REST_API {
 				$response['followers']['users'][$k]['display_name'] = $user->display_name;
 			}
 		} else {
-			$error['error'] = __('Invalid request','ultimatemember');
+			$error['error'] = __('Invalid request','ultimate-member');
 			return $error;
 		}
 		
@@ -372,7 +373,7 @@ class UM_REST_API {
 		$error = array();
 		
 		if ( !$id ) {
-			$error['error'] = __('You must provide a user ID','ultimatemember');
+			$error['error'] = __('You must provide a user ID','ultimate-member');
 			return $error;
 		}
 		
@@ -380,7 +381,7 @@ class UM_REST_API {
 			global $um_followers;
 			$results = $um_followers->api->following( $id );
 			if ( !$results ) {
-				$error['error'] = __('No users were found','ultimatemember');
+				$error['error'] = __('No users were found','ultimate-member');
 				return $error;
 			}
 			$response['following']['count'] = $um_followers->api->count_following_plain( $id );
@@ -391,7 +392,7 @@ class UM_REST_API {
 				$response['following']['users'][$k]['display_name'] = $user->display_name;
 			}
 		} else {
-			$error['error'] = __('Invalid request','ultimatemember');
+			$error['error'] = __('Invalid request','ultimate-member');
 			return $error;
 		}
 		
@@ -479,20 +480,20 @@ class UM_REST_API {
 		$error = array();
 		
 		if ( !isset( $id ) ) {
-			$error['error'] = __('You must provide a user ID','ultimatemember');
+			$error['error'] = __('You must provide a user ID','ultimate-member');
 			return $error;
 		}
 		
 		$user = get_userdata( $id );
 		if ( !$user ) {
-			$error['error'] = __('Invalid user specified','ultimatemember');
+			$error['error'] = __('Invalid user specified','ultimate-member');
 			return $error;
 		}
 		
 		um_fetch_user( $id );
 		$ultimatemember->user->delete();
 		
-		$response['success'] = __('User has been successfully deleted.','ultimatemember');
+		$response['success'] = __('User has been successfully deleted.','ultimate-member');
 		
 		return $response;
 	}
@@ -508,13 +509,13 @@ class UM_REST_API {
 		$error = array();
 		
 		if ( !isset( $id ) ) {
-			$error['error'] = __('You must provide a user ID','ultimatemember');
+			$error['error'] = __('You must provide a user ID','ultimate-member');
 			return $error;
 		}
 		
 		$user = get_userdata( $id );
 		if ( !$user ) {
-			$error['error'] = __('Invalid user specified','ultimatemember');
+			$error['error'] = __('Invalid user specified','ultimate-member');
 			return $error;
 		}
 		
@@ -636,7 +637,7 @@ class UM_REST_API {
 		$error = array();
 		// Make sure our query is valid
 		if ( ! in_array( $query, $accepted ) ) {
-			$error['error'] = __( 'Invalid query!', 'ultimatemember' );
+			$error['error'] = __( 'Invalid query!', 'ultimate-member');
 
 			$this->data = $error;
 			$this->output();
@@ -735,6 +736,9 @@ class UM_REST_API {
 	 * Modify User Profile
 	 */
 	function user_key_field( $user ) {
+		
+		if( ! isset( $user->ID ) ) return;
+
 		if ( current_user_can( 'edit_users' ) && current_user_can( 'edit_user', $user->ID ) ) {
 			$user = get_userdata( $user->ID );
 			?>
@@ -742,20 +746,20 @@ class UM_REST_API {
 				<tbody>
 					<tr>
 						<th>
-							<label for="um_set_api_key"><?php _e( 'Ultimate Member REST API', 'ultimatemember' ); ?></label>
+							<label for="um_set_api_key"><?php _e( 'Ultimate Member REST API', 'ultimate-member'); ?></label>
 						</th>
 						<td>
 							<?php if ( empty( $user->um_user_public_key ) ) { ?>
 								<p><input name="um_set_api_key" type="checkbox" id="um_set_api_key" value="0" />
-								<span class="description"><?php _e( 'Generate API Key', 'ultimatemember' ); ?></span></p>
+								<span class="description"><?php _e( 'Generate API Key', 'ultimate-member'); ?></span></p>
 							<?php } else { ?>
 								<p>
-								<strong><?php _e( 'Public key:', 'ultimatemember' ); ?>&nbsp;</strong><span id="publickey"><?php echo $user->um_user_public_key; ?></span><br/>
-								<strong><?php _e( 'Secret key:', 'ultimatemember' ); ?>&nbsp;</strong><span id="privatekey"><?php echo $user->um_user_secret_key; ?></span><br/>
-								<strong><?php _e( 'Token:', 'ultimatemember' ); ?>&nbsp;</strong><span id="token"><?php echo $this->get_token( $user->ID ); ?></span>
+								<strong><?php _e( 'Public key:', 'ultimate-member'); ?>&nbsp;</strong><span id="publickey"><?php echo $user->um_user_public_key; ?></span><br/>
+								<strong><?php _e( 'Secret key:', 'ultimate-member'); ?>&nbsp;</strong><span id="privatekey"><?php echo $user->um_user_secret_key; ?></span><br/>
+								<strong><?php _e( 'Token:', 'ultimate-member'); ?>&nbsp;</strong><span id="token"><?php echo $this->get_token( $user->ID ); ?></span>
 								</p>
 								<p><input name="um_set_api_key" type="checkbox" id="um_set_api_key" value="0" />
-								<span class="description"><?php _e( 'Revoke API Keys', 'ultimatemember' ); ?></span></p>
+								<span class="description"><?php _e( 'Revoke API Keys', 'ultimate-member'); ?></span></p>
 							<?php } ?>
 						</td>
 					</tr>

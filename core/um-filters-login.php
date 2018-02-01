@@ -30,10 +30,10 @@
 		if ( isset( $_REQUEST['err'] ) && !empty( $_REQUEST['err'] ) ) {
 			switch( $_REQUEST['err'] ) {
 				case 'blocked_email':
-					$err = __('This email address has been blocked.','ultimatemember');
+					$err = __('This email address has been blocked.','ultimate-member');
 					break;
 				case 'blocked_ip':
-					$err = __('Your IP address has been blocked.','ultimatemember');
+					$err = __('Your IP address has been blocked.','ultimate-member');
 					break;
 			}
 		}
@@ -63,7 +63,7 @@
 	/***
 	***	@login checks thru the wordpress admin login
 	***/
-	add_filter('authenticate', 'um_wp_form_errors_hook_logincheck', 999, 3);
+	add_filter('authenticate', 'um_wp_form_errors_hook_logincheck', 50, 3);
 	function um_wp_form_errors_hook_logincheck( $user, $username, $password ) {
 		
 		do_action('wp_authenticate_username_password_before', $user, $username, $password );
@@ -75,16 +75,16 @@
 
 			switch( $status ) {
 				case 'inactive':
-					return new WP_Error( $status, __('Your account has been disabled.','ultimatemember') );
+					return new WP_Error( $status, __('Your account has been disabled.','ultimate-member') );
 					break;
 				case 'awaiting_admin_review':
-					return new WP_Error( $status, __('Your account has not been approved yet.','ultimatemember') );
+					return new WP_Error( $status, __('Your account has not been approved yet.','ultimate-member') );
 					break;
 				case 'awaiting_email_confirmation':
-					return new WP_Error( $status, __('Your account is awaiting e-mail verification.','ultimatemember') );
+					return new WP_Error( $status, __('Your account is awaiting e-mail verification.','ultimate-member') );
 					break;
 				case 'rejected':
-					return new WP_Error( $status, __('Your membership request has been rejected.','ultimatemember') );
+					return new WP_Error( $status, __('Your membership request has been rejected.','ultimate-member') );
 					break;
 			}
 			
